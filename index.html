@@ -3134,18 +3134,18 @@ PKN.Aktiviti={
       {s:"januari",k:"Januari",a:"Hari jadi saya pada bulan Januari."},
       {s:"sekolah kebangsaan taman universiti",k:"Sekolah Kebangsaan Taman Universiti",a:"Saya belajar di Sekolah Kebangsaan Taman Universiti."}
     ]);
-    let n=0,salah=0;const isi=document.createElement("div");
+    let n=0,salah=0,cubaan=0;const isi=document.createElement("div");
     this.bukaPapan({ikon:"\uE001",tajuk:"Betulkan Papan Tanda",sub:"Gua Misteri · Cikgu Faris",isi});
     const soal=()=>{
-      const P=set[n],sebahagian=P.k.split(" ").map((w,i)=>i?w.toLowerCase():w).join(" "),pilihan=this.kocok([...new Set([P.s,P.k,sebahagian])]);
+      cubaan=0;const P=set[n],sebahagian=P.k.split(" ").map((w,i)=>i?w.toLowerCase():w).join(" "),pilihan=this.kocok([...new Set([P.s,P.k,sebahagian])]);
       isi.innerHTML=`<p class="arahan">Dengar ayat. Pilih cara menulis nama yang betul.</p><div class="kemajuan">Papan tanda ${n+1} daripada ${set.length}</div>
         <div class="ayat">${E(P.a.replace(P.k,"_____"))}</div><div class="baris-dengar"></div>
         <div class="papan-tanda">${E(P.s)}</div><div class="grid-teks">${pilihan.map(o=>`<button class="pilih" data-v="${E(o)}">${E(o)}</button>`).join("")}</div><div class="maklum"></div>`;
       const b=this.btnDengar(()=>P.a,"🔊 Dengar ayat","khas");isi.querySelector(".baris-dengar").append(b);setTimeout(()=>this.sebut(P.a,b),250);
       const grid=isi.querySelector(".grid-teks"),mk=isi.querySelector(".maklum"),tanda=isi.querySelector(".papan-tanda");
       grid.querySelectorAll(".pilih").forEach(btn=>btn.onclick=()=>{
-        if(grid.classList.contains("dijawab"))return;
-        PKN.Rekod&&PKN.Rekod.log({jenis:"jawapan",lokasi:"Gua Misteri",aktiviti:"Betulkan papan tanda",soalan:P.a,jawapan:btn.dataset.v,betul:btn.dataset.v===P.k?"Ya":"Tidak",cubaan:1});
+        if(grid.classList.contains("dijawab"))return;cubaan++;
+        PKN.Rekod&&PKN.Rekod.log({jenis:"jawapan",lokasi:"Gua Misteri",aktiviti:"Betulkan papan tanda",soalan:P.a,jawapan:btn.dataset.v,betul:btn.dataset.v===P.k?"Ya":"Tidak",cubaan});
         if(btn.dataset.v===P.k){
           btn.classList.add("betul");grid.classList.add("dijawab");tanda.textContent=P.k;tanda.classList.add("betul");isi.querySelector(".ayat").textContent=P.a;
           mk.className="maklum betul";mk.innerHTML="✅ Betul! Kata nama khas bermula dengan huruf besar.<br>";this.sebut("Betul! Syabas!");
@@ -3164,18 +3164,18 @@ PKN.Aktiviti={
 PKN.Aktiviti.asingkanBakul=function(selesai,kataBaru){
   const E=this.esc,kata=this.kocok(kataBaru||[{t:"rumah",j:"am"},{t:"buku",j:"am"},{t:"kucing",j:"am"},{t:"cikgu",j:"am"},
     {t:"Ahmad",j:"khas"},{t:"Johor Bahru",j:"khas"},{t:"Sekolah Kebangsaan Taman Universiti",j:"khas"},{t:"Januari",j:"khas"}]);
-  let n=0,salah=0,kunci=false;const isi=document.createElement("div");
+  let n=0,salah=0,kunci=false,cubaan=0;const isi=document.createElement("div");
   this.bukaPapan({ikon:"🗼",tajuk:"Am atau Khas?",sub:"Rumah Api · Cikgu Nur Fatihah",isi});
   const soal=()=>{
-    const P=kata[n];kunci=false;
+    const P=kata[n];kunci=false;cubaan=0;
     isi.innerHTML=`<p class="arahan">Dengar perkataan. Masukkan perkataan ke dalam bakul yang betul.</p><div class="kemajuan">Perkataan ${n+1} daripada ${kata.length}</div>
       <div class="kad-kata"><div class="perkataan">${E(P.t)}</div><div class="slot"></div></div>
       <div class="bakul"><button class="am" data-j="am"><span>🧺</span>Kata Nama Am</button><button class="khs" data-j="khas"><span>🧺</span>Kata Nama Khas</button></div><div class="maklum"></div>`;
     const b=this.btnDengar(()=>P.t,"🔊 Dengar","khas kecil");isi.querySelector(".slot").append(b);setTimeout(()=>this.sebut(P.t,b),250);
     const mk=isi.querySelector(".maklum");
     isi.querySelectorAll(".bakul button").forEach(btn=>btn.onclick=()=>{
-      if(kunci)return;
-      PKN.Rekod&&PKN.Rekod.log({jenis:"jawapan",lokasi:"Rumah Api",aktiviti:"Am atau khas?",soalan:P.t,jawapan:btn.dataset.j==="am"?"Kata Nama Am":"Kata Nama Khas",betul:btn.dataset.j===P.j?"Ya":"Tidak",cubaan:1});
+      if(kunci)return;cubaan++;
+      PKN.Rekod&&PKN.Rekod.log({jenis:"jawapan",lokasi:"Rumah Api",aktiviti:"Am atau khas?",soalan:P.t,jawapan:btn.dataset.j==="am"?"Kata Nama Am":"Kata Nama Khas",betul:btn.dataset.j===P.j?"Ya":"Tidak",cubaan});
       if(btn.dataset.j===P.j){kunci=true;mk.className="maklum betul";mk.textContent=`✅ Betul! “${P.t}” ialah kata nama ${P.j}.`;this.sebut("Betul!");
         setTimeout(()=>{if(n===kata.length-1){this.tutup();selesai(salah)}else{n++;soal()}},1300)}
       else{salah++;mk.className="maklum salah";mk.textContent=P.j==="am"?"❌ Belum tepat. Petunjuk: perkataan ini nama umum dan ditulis dengan huruf kecil.":"❌ Belum tepat. Petunjuk: perkataan ini nama khusus dan bermula dengan huruf besar."}
@@ -3225,7 +3225,7 @@ PKN.Rekod={
   // ---------- Murid ----------
   binaMurid(o={}){const t=new Date().toISOString();
     return{idMurid:this.idRawak("m"),kodPaparan:this.kodPaparan(),nama:"",kelas:"",watak:"L",dicipta:t,terakhirAktif:t,asal:"v5.2",contoh:0,
-      percubaan:1,selesai:[false,false,false,false,false,false],bintang:{},nota:{},notaTab:{},lisan:{},petiDibuka:false,lencana:{},sejarah:[],...o}},
+      percubaan:1,selesai:[false,false,false,false,false,false],bintang:{},nota:{},notaTab:{},lisan:{},petiDibuka:false,lencana:{},sejarah:[],statusLokasi:{},kadKata:{},...o}},
   async senaraiMurid(){if(!this.db)return Object.values(this.mem.murid);return(await this._op("murid","readonly",s=>s.getAll()))||[]},
   async ambilMurid(id){if(!id)return null;if(!this.db)return this.mem.murid[id]||null;return(await this._op("murid","readonly",s=>s.get(id)))||null},
   async muridBaharu(o){const m=this.binaMurid(o);this.mem.murid[m.idMurid]=m;await this._op("murid","readwrite",s=>s.put(m));await this.pilihMurid(m.idMurid);return m},
@@ -3560,7 +3560,8 @@ PKN.Belajar={
   },
   semakCari(scene,teks){
     const C=this.cari;if(!C||C.i>=C.senarai.length){PKN.UI.toast(`🏷️ Ini label ${teks}.`);return}
-    const w=C.senarai[C.i],ok=teks===w;PKN.Rekod.log({jenis:"jawapan",lokasi:"Sekolah Pulau",aktiviti:"Cari label",soalan:`Cari ${w}`,jawapan:teks,betul:ok?"Ya":"Tidak",cubaan:1});
+    const w=C.senarai[C.i],ok=teks===w;C.cubaan=(C.cubaanUntuk===w?C.cubaan||0:0)+1;C.cubaanUntuk=w;
+    PKN.Rekod.log({jenis:"jawapan",lokasi:"Sekolah Pulau",aktiviti:"Cari label",soalan:`Cari ${w}`,jawapan:teks,betul:ok?"Ya":"Tidak",cubaan:C.cubaan});
     if(!ok){C.salah++;PKN.UI.toast(`❌ Ini ${teks}. Cari ${w}!`,2500);PKN.Aktiviti.sebut(`Ini ${teks}. Cari ${w}.`);return}
     C.i++;scene.rig.sapa();
     if(C.i<C.senarai.length){PKN.UI.toast(`✅ Betul! Ini ${w}.`,2200);PKN.Aktiviti.sebut(`Betul! Ini ${w}.`);setTimeout(()=>this.kadMisi(),1200)}
@@ -3647,7 +3648,9 @@ PKN.Belajar={
   },
   async paparRekod(){
     const A=PKN.Aktiviti,E=A.esc,R=(await PKN.Rekod.semua()).slice().reverse(),isi=document.createElement("div");
-    const ring={};for(const r of R){const k=r.nama+"|"+r.kelas;ring[k]=ring[k]||{nama:r.nama,kelas:r.kelas,jawapan:0,betul:0,selesai:new Set()};
+    // v5.2 Fasa 3: ringkasan dikumpul mengikut murid (idMurid); rekod lama tanpa profil dikumpul mengikut nama dan kelas
+    const MR={};(await PKN.Rekod.senaraiMurid()).forEach(m=>MR[m.idMurid]=m);
+    const ring={};for(const r of R){const k=r.idMurid||"lama|"+r.nama+"|"+r.kelas;ring[k]=ring[k]||{nama:r.nama+(r.idMurid?(MR[r.idMurid]&&MR[r.idMurid].contoh?" (CONTOH)":""):" (rekod lama)"),kelas:r.kelas,jawapan:0,betul:0,selesai:new Set()};
       if(r.jenis==="jawapan"){ring[k].jawapan++;if(r.betul==="Ya")ring[k].betul++}if(r.jenis==="selesai")ring[k].selesai.add(r.lokasi)}
     isi.innerHTML=`<p class="arahan">Ringkasan murid</p><div class="jadual"><table><tr><th>Nama</th><th>Kelas</th><th>Lokasi selesai</th><th>Jawapan betul</th></tr>
       ${Object.values(ring).map(m=>`<tr><td>${E(m.nama)}</td><td>${E(m.kelas)}</td><td>${m.selesai.size}/6</td><td>${m.betul}/${m.jawapan}</td></tr>`).join("")||"<tr><td colspan=4>Tiada rekod lagi.</td></tr>"}</table></div>
@@ -3658,10 +3661,13 @@ PKN.Belajar={
     isi.querySelector("#cSuara").onchange=e=>PKN.Rekod.setSimpanSuara(e.target.checked);
     // v5.2 Fasa 2: lajur baharu di hujung (lajur sedia ada tidak berubah)
     const nilai={};(await PKN.Rekod.senaraiRakaman()).forEach(x=>{nilai[x.idRakaman]=x.penilaian||""});
-    const csv=()=>{const kol=["masa","nama","kelas","percubaan","jenis","lokasi","aktiviti","soalan","jawapan","betul","cubaan","idMurid","statusLisan","idRakaman","penilaianSuara"],q=v=>`"${String(v===undefined||v===null?"":v).replace(/"/g,'""')}"`;
-      return "\ufeff"+kol.join(",")+"\n"+R.slice().reverse().map(r=>kol.map(c=>q(c==="masa"?new Date(r.masa).toLocaleString("ms-MY"):c==="penilaianSuara"?(r.idRakaman?(nilai[r.idRakaman]===undefined?"rakaman dipadam":nilai[r.idRakaman]):""):r[c])).join(",")).join("\n")};
+    const csv=()=>{const kol=["masa","nama","kelas","percubaan","jenis","lokasi","aktiviti","soalan","jawapan","betul","cubaan","idMurid","statusLisan","idRakaman","penilaianSuara","kodPaparan","idSoalan","contoh"],q=v=>`"${String(v===undefined||v===null?"":v).replace(/"/g,'""')}"`;
+      return "\ufeff"+kol.join(",")+"\n"+R.slice().reverse().map(r=>kol.map(c=>q(c==="masa"?new Date(r.masa).toLocaleString("ms-MY"):c==="penilaianSuara"?(r.idRakaman?(nilai[r.idRakaman]===undefined?"rakaman dipadam":nilai[r.idRakaman]):""):
+        c==="kodPaparan"?((MR[r.idMurid]&&MR[r.idMurid].kodPaparan)||""):c==="contoh"?(r.contoh?"CONTOH":""):r[c])).join(",")).join("\n")};
     A.bukaPapan({ikon:"📋",tajuk:"Rekod Murid",sub:"Untuk guru sahaja",isi,kaki:[
-      A.butang("🗑️ Padam rekod","kayu kecil",async()=>{if(confirm("Padam semua rekod dalam peranti ini? Tindakan ini tidak boleh diundur.")){await PKN.Rekod.padamSemua();this.paparRekod()}}),
+      // v5.2 Fasa 3: panel pengesahan sendiri (bukan confirm())
+      A.butang("🗑️ Padam rekod","kayu kecil",()=>PKN.Sahkan({tajuk:"Padam Semua Rekod",mesej:`Padam semua <b>${R.length}</b> rekod jawapan dan semua rakaman suara dalam peranti ini? Senarai murid dan kemajuan mereka tidak dipadam. Rekod versi 5.1.1 tidak diubah. Tindakan ini tidak boleh diundur.`,
+        taip:"PADAM",ya:"Padam semua",kembali:()=>this.paparRekod(),teruskan:async()=>{await PKN.Rekod.padamSemua();await PKN.Rekod.log({jenis:"guru",lokasi:"-",aktiviti:"Padam rekod",jawapan:`${R.length} rekod dipadam`,betul:"-",cubaan:"-"});PKN.UI.toast("Rekod dipadam.",2000);this.paparRekod()}})),
       A.butang("⬇️ Eksport CSV (Excel)","emas",()=>{const t=csv();try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv;charset=utf-8"}));a.download=`rekod-pengembaraan-kata-nama-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(a);a.click();a.remove()}catch(e){}
         const ta=isi.querySelector("#tCsv");ta.hidden=false;ta.value=t;PKN.UI.toast("Jika muat turun tidak bermula, salin teks CSV di bawah.",4000)}),
       A.butang("Tutup","",()=>A.tutup())]});
@@ -3816,12 +3822,15 @@ PKN.BegKata={
     4:[["pantai","🏖️","am"],["Teluk Rahsia","🏝️","khas"],["penyu","🐢","am"],["peti","🧰","am"]]},
   semua(){return PKN.Urutan.URUT.flatMap(i=>this.KAD[i].map(k=>({w:k[0],e:k[1],j:k[2],lokasi:i})))},
   jumlah(){return this.semua().length},
-  dapat(){const P=PKN.Belajar.profil;return P?this.semua().filter(k=>P.selesai[k.lokasi]):[]},
+  // v5.2 Fasa 3: kad kekal selepas Main Sekali Lagi dan Set semula (kadKata), termasuk lokasi yang pernah selesai dalam percubaan terdahulu
+  lokasiPernah(P){const s=new Set();if(!P)return s;(P.selesai||[]).forEach((v,i)=>{if(v)s.add(i)});(P.sejarah||[]).forEach(h=>Object.keys((h&&h.bintang)||{}).forEach(i=>s.add(+i)));return s},
+  ada(P,k){return!!(P&&((P.kadKata&&P.kadKata[k.w])||this.lokasiPernah(P).has(k.lokasi)))},
+  dapat(P){P=P||PKN.Belajar.profil;return P?this.semua().filter(k=>this.ada(P,k)):[]},
   bilangan(){return this.dapat().length},
   buka(){
     const A=PKN.Aktiviti,B=PKN.Belajar,isi=document.createElement("div"),P=B.profil,U=PKN.Urutan;
     isi.innerHTML=`<p class="arahan">Kad kata yang telah kamu kumpulkan: <b>${this.bilangan()}/${this.jumlah()}</b></p><p class="nota-kecil">Ketik kad untuk mendengar. 🟨 kata nama am · 🟦 kata nama khas</p>`+
-      U.URUT.map(i=>`<div class="beg-kumpulan"><b>${U.no(i)} · ${U.nama(i)}</b><div class="beg-grid">${this.KAD[i].map(([w,e,j])=>P&&P.selesai[i]?`<button class="kad-kata-beg ${j}" data-w="${A.esc(w)}"><span>${e}</span><i>${j==="khas"?B.hurufBesar(w):w}</i></button>`:`<div class="kad-kata-beg kosong"><span>❔</span><i>?</i></div>`).join("")}</div></div>`).join("");
+      U.URUT.map(i=>`<div class="beg-kumpulan"><b>${U.no(i)} · ${U.nama(i)}</b><div class="beg-grid">${this.KAD[i].map(([w,e,j])=>this.ada(P,{w,lokasi:i})?`<button class="kad-kata-beg ${j}" data-w="${A.esc(w)}"><span>${e}</span><i>${j==="khas"?B.hurufBesar(w):w}</i></button>`:`<div class="kad-kata-beg kosong"><span>❔</span><i>?</i></div>`).join("")}</div></div>`).join("");
     isi.querySelectorAll("button.kad-kata-beg").forEach(b=>b.onclick=()=>{A.sebut(b.dataset.w);b.classList.remove("lantun");void b.offsetWidth;b.classList.add("lantun")});
     A.bukaPapan({ikon:"🎒",tajuk:"Beg Kata",sub:"Koleksi kad kata nama",isi,kaki:[A.butang("🗣️ Latih sebutan","kayu",()=>PKN.Sebut.buka()),A.butang("Tutup","emas",()=>A.tutup())]});
     document.getElementById("modalPapan").classList.add("lebar");
@@ -4096,8 +4105,9 @@ PKN.MenuGuru={
     [["Perlahan",135],["Sederhana",165],["Laju",200]].forEach(([n,v])=>{const b=A.butang(n,PKN.TETAPAN.pemain.laju===v?"emas kecil":"kayu kecil",()=>{PKN.TETAPAN.pemain.laju=v;PKN.UI.toast(`🚶 Kelajuan: ${n}`,1500);this.buka()});k.append(b)});r3.append(k);
     const r4=PKN.Tetapan.bahagian(isi,"📈 Prestasi");r4.insertAdjacentHTML("beforeend",`<p class="fps-guru">FPS: –</p>`);
     const fps=r4.querySelector(".fps-guru");clearInterval(this._t);this._t=setInterval(()=>{if(!document.body.contains(fps)){clearInterval(this._t);return}fps.textContent=document.getElementById("fps").textContent},500);
-    const r5=PKN.Tetapan.bahagian(isi,"♻️ Kemajuan murid semasa");r5.insertAdjacentHTML("beforeend",`<p class="nota-kecil">Set semula kemajuan murid yang sedang bermain (rekod jawapan tidak dipadam).</p>`);
-    r5.append(A.butang("Set semula kemajuan","kayu kecil",()=>{if(B.profil&&confirm(`Set semula kemajuan ${B.profil.nama}?`)){Object.assign(B.profil,{selesai:[false,false,false,false,false,false],bintang:{},nota:{},petiDibuka:false,lencana:{},lisan:{},notaTab:{}});B.simpan();location.reload()}}));
+    const r5=PKN.Tetapan.bahagian(isi,"♻️ Kemajuan murid semasa");r5.insertAdjacentHTML("beforeend",`<p class="nota-kecil">Set semula kemajuan murid yang sedang bermain. Percubaan baharu dimulakan; rekod jawapan, lencana, sijil dan kad Beg Kata tidak dipadam.</p>`);
+    // v5.2 Fasa 3: panel pengesahan sendiri; diselaraskan dengan Main Sekali Lagi (keputusan 5)
+    r5.append(A.butang("Set semula kemajuan","kayu kecil",()=>{if(B.profil)this.setSemula()}));
     A.bukaPapan({ikon:"🔐",tajuk:"Menu Guru",sub:"Rekod, ujian dan prestasi",isi,kaki:[A.butang("◀ Tetapan","kayu",()=>PKN.Tetapan.buka()),A.butang("✔ Tutup","emas",()=>A.tutup())]});document.getElementById("modalPapan").classList.add("lebar");
   }
 };
@@ -4821,7 +4831,7 @@ PKN.BabakPenutup={
     P.sejarah.push({percubaan:no,tamat:(P.sijil&&P.sijil.tarikh)||new Date().toISOString(),bintang:{...P.bintang},jumlahBintang:this.jumlahBintang(P)});
     P.percubaan=no+1;
     // kemajuan misi sahaja ditetapkan semula; sijil, lencana, Beg Kata, sejarah dan rekod guru dikekalkan
-    Object.assign(P,{selesai:[false,false,false,false,false,false],bintang:{},nota:{},petiDibuka:false,lisan:{},notaTab:{}});
+    Object.assign(P,{selesai:[false,false,false,false,false,false],bintang:{},nota:{},petiDibuka:false,lisan:{},notaTab:{},statusLokasi:{}});
     await PKN.Rekod.simpanProfil(P);
     await PKN.Rekod.log({jenis:"main semula",lokasi:"-",aktiviti:"Percubaan baharu",jawapan:`Percubaan ${P.percubaan}`,betul:"-",cubaan:"-"});
     try{sessionStorage.setItem("pkn-percubaan-baharu",String(P.percubaan))}catch(e){}
@@ -5060,8 +5070,9 @@ PKN.SuaraGuru={
   async buka(){
     const A=PKN.Aktiviti,R=PKN.Rekod,E=A.esc,P=this.penapis;this._bebas();
     const [baru,lama,murid]=await Promise.all([R.senaraiRakaman(),R.rakamanLama(),R.senaraiMurid()]);
-    const kod={};murid.forEach(m=>kod[m.idMurid]=m.kodPaparan||"");
-    const semua=[...baru,...lama],kunci=r=>r.idMurid?r.idMurid:"lama:"+r.nama+"|"+r.kelas,label=r=>`${r.nama||"Tanpa nama"} · ${r.kelas||"Tiada kelas"}${r.idMurid&&kod[r.idMurid]?" · Kod "+kod[r.idMurid]:""}`;
+    const kod={},MM={};murid.forEach(m=>{kod[m.idMurid]=m.kodPaparan||"";MM[m.idMurid]=m});
+    // v5.2 Fasa 3: nama dan kelas diambil daripada profil murid jika ada (rakaman yang diimport dan dipadankan mengikut nama dan kelas)
+    const semua=[...baru,...lama],kunci=r=>r.idMurid?r.idMurid:"lama:"+r.nama+"|"+r.kelas,label=r=>{const m=MM[r.idMurid]||r;return`${m.nama||"Tanpa nama"} · ${m.kelas||"Tiada kelas"}${r.idMurid&&kod[r.idMurid]?" · Kod "+kod[r.idMurid]:""}${m.contoh?" · CONTOH":""}`};
     const pilMurid={};semua.forEach(r=>{pilMurid[kunci(r)]=label(r)});
     const kelas=[...new Set(semua.map(r=>r.kelas||""))].sort(),lokasi=[...new Set(semua.map(r=>r.lokasi||""))].sort();
     const papar=semua.filter(r=>(!P.murid||kunci(r)===P.murid)&&(!P.kelas||(r.kelas||"")===P.kelas)&&(!P.lokasi||(r.lokasi||"")===P.lokasi)&&
@@ -5088,7 +5099,9 @@ PKN.SuaraGuru={
           <div class="baris2">${E(r.soalan||"")}</div><div class="baris3">${E(t)}${r.percubaan?` · Percubaan ${r.percubaan}`:""} · ${this._tempoh(r.tempohMs)} · ${Math.max(1,Math.round((r.saizBait||0)/1024))} KB</div>
           <div class="tindakan"></div><div class="slot-audio"></div>`;
         const tk=kad.querySelector(".tindakan"),slot=kad.querySelector(".slot-audio");
-        tk.append(A.butang("▶ Dengar","emas kecil",()=>{
+        // v5.2 Fasa 3: rakaman yang diimport daripada fail JSON tanpa audio (metadata dan penilaian sahaja)
+        if(!r.audio)slot.innerHTML=`<p class="nota-kecil">Audio tidak disertakan (diimport daripada fail tanpa audio).</p>`;
+        if(r.audio)tk.append(A.butang("▶ Dengar","emas kecil",()=>{
           document.querySelectorAll(".suara-guru .slot-audio audio").forEach(a=>{a.pause();a.remove()});
           const b=R.audioBlob(r);if(!b){PKN.UI.toast("Audio tidak dapat dibuka.",2500);return}
           const u=URL.createObjectURL(b);this._url.push(u);const au=document.createElement("audio");au.controls=true;au.src=u;slot.append(au);au.play().catch(()=>{})}));
@@ -5099,7 +5112,7 @@ PKN.SuaraGuru={
               tk.querySelectorAll(".nilai").forEach(n=>n.setAttribute("aria-pressed",n.dataset.n===r.penilaian))});
             b.dataset.n=nilai;b.setAttribute("aria-pressed",r.penilaian===nilai);return b};
           tk.append(nb("✔ Jelas","Jelas","jelas"),nb("Perlu bimbingan","Perlu bimbingan","bimbing"))}
-        tk.append(A.butang("⬇ Muat turun","kayu kecil",()=>{const b=R.audioBlob(r);if(!b)return;
+        if(r.audio)tk.append(A.butang("⬇ Muat turun","kayu kecil",()=>{const b=R.audioBlob(r);if(!b)return;
           const d=r.masa?new Date(r.masa):new Date(),tm=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
           const a=document.createElement("a"),u=URL.createObjectURL(b);a.href=u;a.download=`${this._nama(r.nama)}_${this._nama(r.kelas)}_${this._nama(r.lokasi)}_${tm}.${this._ext(r.mimeType||b.type)}`;
           document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}));
@@ -5119,5 +5132,646 @@ PKN.SuaraGuru={
     r1.append(PKN.Aktiviti.butang("🎙️ Rekod Suara Murid","emas kecil",()=>PKN.SuaraGuru.buka()))};
 })();
 </script>
+<style>
+/* v5.2 Fasa 3: Rekod Setiap Murid, sandaran JSON dan data contoh (papan putih, tulisan hitam) */
+.lencana-contoh{display:inline-block;background:#FFF3C4!important;color:#111!important;border:1px solid #B26A00;border-radius:8px;padding:0 6px;font-size:.8125rem;font-weight:800;margin-left:6px;vertical-align:middle}
+.murid-guru .kepala-murid{background:#FFFFFF!important;color:#111!important;border:2px solid #8B5A2B;border-radius:12px;padding:8px 12px;margin:0 0 8px}
+.murid-guru .kepala-murid b{font-size:1.1rem}.murid-guru .kepala-murid small{display:block;font-size:.875rem;color:#333!important}
+.ringkas-murid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:6px;margin:6px 0 4px}
+.ringkas-murid div{background:#FFFFFF!important;color:#111!important;border:2px solid #E8D6B5;border-radius:10px;padding:6px 8px;text-align:center}
+.ringkas-murid b{display:block;font-size:1.15rem;color:#111!important}.ringkas-murid small{font-size:.8125rem;color:#333!important}
+.status-lokasi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin:6px 0 4px}
+.status-lokasi .sl{background:#FFFFFF!important;color:#111!important;border:2px solid #C9A27A;border-radius:10px;padding:6px 8px;font-size:.875rem}
+.status-lokasi .sl b{display:block;font-size:.9375rem;color:#111!important}.status-lokasi .sl small{font-size:.8125rem;color:#333!important}.status-lokasi .sl .tag{font-weight:800}
+.status-lokasi .sl.selesai{border-color:#2E7D32}.status-lokasi .sl.selesai .tag{color:#1B5E20!important}
+.status-lokasi .sl.sedang{border-color:#B26A00}.status-lokasi .sl.sedang .tag{color:#7A4A00!important}
+.status-lokasi .sl.belum{border-style:dashed}.status-lokasi .sl.belum .tag{color:#444!important}
+.murid-guru ul.senarai-ringkas{margin:4px 0 8px;padding-left:22px;font-size:.9375rem;color:#111!important}
+.murid-guru ul.senarai-ringkas li{margin:2px 0}
+.tetapan .maklum-json{font-size:.9rem}
+</style>
+<script>
+/* FAIL MASA DEPAN: js/ui/RekodSetiapMurid.js
+   v5.2 Fasa 3: idSoalan, status lokasi, kad Beg Kata kekal, Set semula diselaraskan dengan Main Sekali Lagi,
+   skrin guru "Rekod Setiap Murid", sandaran JSON (eksport/import gabung) dan data contoh demonstrasi (tanpa audio).
+   Rujukan: dokumentasi/REKA-BENTUK-SISTEM-REKOD-v5.2.md Bahagian 11. */
+(function(){
+  const B=PKN.Belajar,R=PKN.Rekod,A=PKN.Aktiviti,K=PKN.KANDUNGAN;
+  const slug=t=>String(t||"").replace(/<[^>]+>/g,"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  const SL={"Jeti":"jeti","Sekolah Pulau":"sekolah","Gua Misteri":"gua","Rumah Api":"rumah-api","Peti Harta Karun":"peti","Pekan Tengah":"pekan"};
+  // ---------- idSoalan: stabil walaupun soalan dikocok, contoh "jeti-dengar-dan-pilih-bot" ----------
+  R.idSoalan=function(e){if(!e||(e.jenis!=="jawapan"&&e.jenis!=="lisan"))return"";
+    return[SL[e.lokasi]||slug(e.lokasi),slug(e.aktiviti),slug(e.soalan).slice(0,48)].filter(Boolean).join("-")};
+  // ---------- Status lokasi bagi percubaan semasa (profil lama: diterbitkan daripada selesai dan nota) ----------
+  R.statusLokasi=function(P,k){const S=(P&&P.statusLokasi)||{};if(S[k]&&S[k].status)return S[k];
+    if(P&&P.selesai&&P.selesai[k])return{status:"selesai"};if(P&&P.nota&&P.nota[k])return{status:"sedang"};return{status:"belum"}};
+  const tanda=(k,status)=>{const P=B.profil;if(!P||!(k>=0))return false;const s=R.statusLokasi(P,k),t=new Date().toISOString();P.statusLokasi=P.statusLokasi||{};
+    if(status==="sedang"){if(s.status!=="belum")return false;P.statusLokasi[k]={status:"sedang",mula:t,tamat:null};return true}
+    if(s.status==="selesai"&&P.statusLokasi[k])return false;P.statusLokasi[k]={status:"selesai",mula:s.mula||t,tamat:t};return true};
+  const LOG=R.log.bind(R);
+  R.log=function(e){e=e||{};const id=R.idSoalan(e);if(id&&!e.idSoalan)e={...e,idSoalan:id};
+    const P=B.profil,k=K.lokasi.indexOf(e.lokasi);let ubah=false;
+    if(P&&k>=0){
+      if(e.jenis==="selesai"){ubah=tanda(k,"selesai");P.kadKata=P.kadKata||{};const t=new Date().toISOString();
+        (PKN.BegKata.KAD[k]||[]).forEach(([w])=>{if(!P.kadKata[w]){P.kadKata[w]=t;ubah=true}})}
+      else if(e.jenis==="jawapan"||e.jenis==="lisan"||e.jenis==="kunci")ubah=tanda(k,"sedang")}
+    if(ubah)R.simpanProfil(P);
+    return LOG(e)};
+  const NS=B.notaSebelum.bind(B);B.notaSebelum=function(k,mula){if(tanda(k,"sedang"))R.simpanProfil(this.profil);return NS(k,mula)};
+  // ---------- Label CONTOH dalam senarai murid ----------
+  const BM=B.barisMurid.bind(B);B.barisMurid=function(m,aktif){const h=BM(m,aktif);return m&&m.contoh?h.replace("</b>",' <span class="lencana-contoh">CONTOH</span></b>'):h};
+  // ---------- Bacaan tambahan ----------
+  R.semuaDalam=async function(store){if(!this.db)return[];return(await this._op(store,"readonly",s=>s.getAll()))||[]};
+  // ---------- Set semula kemajuan (keputusan 5): seperti Main Sekali Lagi ----------
+  PKN.MenuGuru.setSemula=function(){const P=B.profil;if(!P)return;const E=A.esc,n=(P.selesai||[]).filter(Boolean).length,no=P.percubaan||1;
+    PKN.Sahkan({ikon:"♻️",tajuk:"Set Semula Kemajuan",ya:"Ya, set semula",
+      mesej:`Set semula kemajuan <b>${E(P.nama)}</b> (${n}/6 lokasi selesai)? Murid akan bermula semula dari jeti sebagai percubaan ke-${no+1}.<br>✔ Rekod jawapan, lencana, sijil dan kad Beg Kata <b>tidak dipadam</b>.`,
+      kembali:()=>PKN.MenuGuru.buka(),
+      teruskan:async()=>{P.sejarah=P.sejarah||[];
+        if(n||P.petiDibuka)P.sejarah.push({percubaan:no,tamat:new Date().toISOString(),bintang:{...P.bintang},jumlahBintang:Object.values(P.bintang||{}).reduce((a,b)=>a+b,0),setSemula:1});
+        P.percubaan=no+1;Object.assign(P,{selesai:[false,false,false,false,false,false],bintang:{},nota:{},petiDibuka:false,lisan:{},notaTab:{},statusLokasi:{}});
+        await R.simpanProfil(P);
+        await R.log({jenis:"set semula",lokasi:"-",aktiviti:"Set semula kemajuan (guru)",jawapan:`Percubaan ${P.percubaan}`,betul:"-",cubaan:"-"});
+        try{sessionStorage.setItem("pkn-percubaan-baharu",String(P.percubaan))}catch(e){}
+        PKN.UI.toast("♻️ Kemajuan ditetapkan semula. Halaman dimuat semula…",2000);setTimeout(()=>location.reload(),600)}})};
+  // ---------- Muat turun fail ----------
+  const muatTurun=(teks,nama,jenis)=>{try{const a=document.createElement("a"),u=URL.createObjectURL(new Blob([teks],{type:jenis}));a.href=u;a.download=nama;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),8000);return true}catch(e){return false}};
+  const keBase64=b=>new Promise(ok=>{try{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]||"");f.onerror=()=>ok("");f.readAsDataURL(b)}catch(e){ok("")}});
+  const dariBase64=(s,jenis)=>{const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:jenis||"audio/webm"})};
+  // ---------- Eksport JSON (Bahagian 7) ----------
+  R.eksport=async function(audio){
+    const [murid,sesi,cubaan,rakaman]=await Promise.all(["murid","sesi","cubaan","rakaman"].map(s=>this.semuaDalam(s)));
+    const rk=[];for(const r of rakaman){const o={...r};delete o.audio;delete o.audioJenis;
+      if(audio){const b=this.audioBlob(r);if(b){o.audioBase64=await keBase64(b);o.mimeType=o.mimeType||b.type}}rk.push(o)}
+    return{format:"pkn-rekod",versiSkema:2,versiAplikasi:"5.2",dieksport:new Date().toISOString(),sertaAudio:!!audio,murid,sesi,cubaan,rakaman:rk}};
+  // ---------- Import JSON: menggabungkan data, tidak menindih ----------
+  R.importJson=async function(o){
+    if(!o||o.format!=="pkn-rekod"||!Array.isArray(o.murid)||!Array.isArray(o.cubaan))throw new Error("format");
+    if(!this.db)throw new Error("storan");
+    const h={murid:0,muridKemas:0,dipadankan:0,sesi:0,cubaan:0,rakaman:0,audio:0,langkau:0,aktifDikemas:false};
+    const senaraiTempatan=await this.senaraiMurid(),sedia={};senaraiTempatan.forEach(m=>sedia[m.idMurid]=m);const aktif=await this.tetapan("muridAktif");
+    // Padanan nama dan kelas: murid dari peranti lain (contoh: telefon yang digunakan untuk merakam) yang mempunyai nama dan kelas
+    // sama dengan SATU murid dalam peranti ini digabungkan dengan murid itu; rekod dan rakamannya dipaparkan di bawah murid tersebut.
+    const padanNama=x=>{const c=senaraiTempatan.filter(m=>this.samaNama(m,x));return c.length===1?c[0].idMurid:""};
+    const peta={},masuk=new Set();
+    const mBaru=[];for(const m of o.murid){if(!m||!m.idMurid||!Array.isArray(m.selesai))continue;const a=sedia[m.idMurid];
+      if(!a){const p=padanNama(m);if(p){peta[m.idMurid]=p;h.dipadankan++;continue}mBaru.push(m);masuk.add(m.idMurid);h.murid++}
+      else if(String(m.terakhirAktif||"")>String(a.terakhirAktif||"")){mBaru.push(m);h.muridKemas++;if(m.idMurid===aktif)h.aktifDikemas=true}else h.langkau++}
+    if(mBaru.length)await this._op("murid","readwrite",s=>{mBaru.forEach(m=>s.put(m))});
+    const idBetul=r=>{const id=r.idMurid||"";if(!id)return"";if(peta[id])return peta[id];if(sedia[id]||masuk.has(id))return id;const p=r.nama?padanNama(r):"";if(p&&id)peta[id]=p;return p||id};
+    const ubahId=r=>{const id=idBetul(r);return id===(r.idMurid||"")?r:{...r,idMurid:id}};
+    for(const [store,kunci,senarai,kira] of [["sesi","idSesi",o.sesi||[],"sesi"],["cubaan","idRekod",o.cubaan||[],"cubaan"]]){
+      const ada=new Set((await this._op(store,"readonly",s=>s.getAllKeys()))||[]),baru=[];
+      senarai.forEach(r=>{if(!r||!r[kunci])return;if(ada.has(r[kunci])){h.langkau++;return}ada.add(r[kunci]);baru.push(store==="sesi"?(peta[r.idMurid]?{...r,idMurid:peta[r.idMurid]}:r):ubahId(r))});
+      if(baru.length)await this._op(store,"readwrite",s=>{baru.forEach(r=>s.put(r))});h[kira]+=baru.length}
+    for(const x0 of (o.rakaman||[])){if(!x0||!x0.idRakaman)continue;const x=ubahId(x0),r={...x};delete r.audioBase64;
+      r.audio=x.audioBase64?dariBase64(x.audioBase64,x.mimeType):null;const a=await this.ambilRakaman(r.idRakaman);
+      if(a){if(!a.audio&&r.audio){a.audio=r.audio;a.mimeType=r.mimeType||a.mimeType;await this._op("rakaman","readwrite",s=>s.put(a));h.audio++}else h.langkau++;continue}
+      let ok=await this._op("rakaman","readwrite",s=>s.put(r));
+      if(!ok&&r.audio&&r.audio.arrayBuffer){try{r.audio=await r.audio.arrayBuffer();r.audioJenis="arraybuffer";ok=await this._op("rakaman","readwrite",s=>s.put(r))}catch(e){}}
+      if(ok){h.rakaman++;if(r.audio)h.audio++}}
+    return h};
+  // ---------- Data contoh demonstrasi (tanpa audio, contoh=1) ----------
+  // Rakaman TIDAK dipadam: data contoh tidak mengandungi audio, jadi setiap rakaman ialah rakaman sebenar murid.
+  R.padamContoh=async function(){const h={murid:0,sesi:0,cubaan:0,rakaman:0};if(!this.db)return h;
+    for(const s of ["murid","sesi","cubaan"]){const k=(await this._op(s,"readonly",x=>x.index("contoh").getAllKeys(1)))||[];
+      if(k.length)await this._op(s,"readwrite",x=>{k.forEach(id=>x.delete(id))});h[s]=k.length}
+    return h};
+  // Senarai nama data contoh disimpan dalam peranti sahaja (peranti/senaraiContoh), BUKAN dalam kod, supaya nama murid sebenar
+  // tidak diterbitkan bersama fail permainan (contoh: GitHub Pages). Format: satu baris bagi setiap kelas, "Kelas: Nama, Nama (P), …".
+  R.SENARAI_CONTOH_ASAL="1 Contoh: Aisyah (P), Danial, Mei Ling (P), Kavin, Nurul Huda (P), Harith";
+  R.huraiSenarai=function(teks){const kelas=[];
+    String(teks||"").split(/\r?\n/).forEach(b=>{b=b.trim();if(!b||b[0]==="#")return;const i=b.indexOf(":");if(i<1)return;const k=b.slice(0,i).trim().replace(/\s+/g," ");if(k.length>20)return;
+      const m=b.slice(i+1).split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(x=>{const p=/\(\s*(P|L)\s*\)\s*$/i.exec(x);return{nama:x.replace(/\(\s*(P|L)\s*\)\s*$/i,"").trim().slice(0,24),watak:p&&p[1].toUpperCase()==="P"?"LP":"L"}}).filter(x=>x.nama);
+      if(m.length)kelas.push({kelas:k,murid:m})});
+    return kelas};
+  R.tambahContoh=async function(teks){
+    if(!this.db)return null;const KELAS=this.huraiSenarai(teks||this.SENARAI_CONTOH_ASAL);if(!KELAS.length)return null;await this.padamContoh();
+    let benih=20261124;for(const c of JSON.stringify(KELAS))benih=(benih*31+c.charCodeAt(0))%2147483647;
+    const rawak=()=>(benih=(benih*1103515245+12345)%2147483648)/2147483648,antara=(a,b)=>a+rawak()*(b-a),pilih=a=>a[Math.floor(rawak()*a.length)];
+    // Soalan sebenar setiap lokasi (teks sama seperti dalam permainan)
+    const BANK={
+      0:[{a:"Dengar dan Pilih",s:["bot","ikan","ketam","kucing"].map(w=>[w,w,["bola","buku","pokok"]])}],
+      5:[{a:"Teka Papan Tanda",s:[["Saya membeli gula di _____.","Kedai Runcit Pak Ali",["kedai runcit pak ali","Jalan Cempaka"]],["Siti membeli buku di _____.","Kedai Buku Murni",["kedai buku murni","Gerai Mak Cik Kiah"]],
+        ["Rumah Siti terletak di _____.","Jalan Cempaka",["jalan cempaka","Kedai Buku Murni"]],["Adam membeli kuih di _____.","Gerai Mak Cik Kiah",["gerai mak cik kiah","Kedai Runcit Pak Ali"]]]}],
+      1:[{a:"Cari label",s:["bola","buaian","meja","bendera"].map(w=>["Cari "+w,w,["bola","buaian","meja","bendera"]])},
+        {a:"Kata Nama Am",s:[["Yang manakah kata nama am?","meja",["Pak Abu","Jalan Melati"]],["Perkataan kantin ialah nama bagi …","tempat",["orang","haiwan"]],["Pilih perkataan yang betul: “Amin menendang ___ ke arah Hafiz.”","bola",["Bola","Buaian"]]]}],
+      2:[{a:"Betulkan papan tanda",s:[["Kami meneroka Gua Misteri.","Gua Misteri",["gua misteri","Gua misteri"]],["Kak Lina mendaki Bukit Batu.","Bukit Batu",["bukit batu","Bukit batu"]],["Ikan berenang di Sungai Pelangi.","Sungai Pelangi",["sungai pelangi","Sungai pelangi"]]]}],
+      3:[{a:"Am atau khas?",s:[["kapal","am"],["kucing","am"],["pantai","am"],["bendera","am"],["Kapal Seri Pelangi","khas"],["Comel","khas"],["Rumah Api Tanjung Bayu","khas"],["Jalur Gemilang","khas"]].map(([w,j])=>[w,j==="am"?"Kata Nama Am":"Kata Nama Khas",["Kata Nama Am","Kata Nama Khas"]])}],
+      4:[{a:"Kunci Am",s:[["penyu","penyu",["ketam","peti"]],["Perkataan nelayan ialah nama bagi …","orang",["benda","tempat","haiwan"]],["Kak Lina membaca ___ lama itu.","peta",["Peta","Sungai Pelangi"]]]},
+        {a:"Kunci Khas",s:[["Sang Kancil","Kata Nama Khas",["Kata Nama Am"]],["pantai","Kata Nama Am",["Kata Nama Khas"]],["Pilih nama yang ditulis dengan betul.","Pak Hassan",["pak hassan","Pak hassan"]],["Pilih kata nama khas bagi bendera.","Jalur Gemilang",["Kapal Seri Pelangi","bendera"]]]}]};
+    const LISAN={0:["Sebut nama benda di jeti dengan kuat: bot, ikan, ketam, kucing."],5:["Sebut nama kedai kegemaran kamu di pekan ini."],1:["Sebut dengan kuat: bola, buaian, meja, bendera."],
+      2:["Sebut nama tempat dengan kuat: Gua Misteri, Bukit Batu, Sungai Pelangi."],3:["Sebut pasangan ini dengan kuat: kapal dan Kapal Seri Pelangi."],4:["Siapakah nama kamu? Jawab dalam ayat yang lengkap.","Di sekolah manakah kamu belajar? Jawab dalam ayat yang lengkap."]};
+    // Kesukaran aktiviti: ditambah kepada peluang betul pada cubaan pertama (Am atau khas? dan Betulkan papan tanda paling sukar)
+    const SUKAR={"Dengar dan Pilih":.16,"Cari label":.1,"Kata Nama Am":0,"Teka Papan Tanda":-.06,"Betulkan papan tanda":-.24,"Am atau khas?":-.2,"Kunci Am":.05,"Kunci Khas":-.12};
+    const URUT=PKN.Urutan.URUT,kini=Date.now(),minit=6e4,saat=1e3;
+    // Slot waktu sekolah (Isnin–Jumaat, 55 minit) minggu ini yang sudah tamat. Jika kurang daripada dua slot, hari persekolahan sebelumnya digunakan.
+    const hariMinggu=[];{const d=new Date(kini);d.setHours(0,0,0,0);const isnin=new Date(d);isnin.setDate(d.getDate()-((d.getDay()+6)%7));
+      for(const x=new Date(isnin);x<=d;x.setDate(x.getDate()+1))if(x.getDay()>=1&&x.getDay()<=5)hariMinggu.push(new Date(x))}
+    const slotKelas=ci=>{const JAM=[[8,0],[10,20],[11,45],[9,5]],hari=[...hariMinggu];
+      const bina=()=>hari.map((d,di)=>{const j=JAM[(ci*2+di)%4],m=new Date(d);m.setHours(j[0],j[1],0,0);return{mula:+m,tamat:+m+55*minit}}).filter(x=>x.tamat<=kini-5*minit);
+      let r=bina();const y=new Date(hari[0]||kini);let g=0;while(r.length<2&&g++<21){y.setDate(y.getDate()-1);if(y.getDay()>=1&&y.getDay()<=5){hari.unshift(new Date(y));r=bina()}}
+      return r.slice(-3)};
+    const murid=[],sesi=[],cubaan=[];
+    const janaMurid=(x,kelas,slots,pRakam,ci)=>{
+      const m=this.binaMurid({nama:x.nama,kelas,watak:x.watak,contoh:1,asal:"contoh"});
+      let si=x.jenis==="baru"?slots.length-1:0,t=slots[si].mula+antara(1,7)*minit,S=null,habis=false;
+      const telefon=ci%2?rawak()<.6:rawak()<.1,lambat=1.55-x.mahir;
+      const bukaSesi=no=>{S={idSesi:this.idRawak("s"),idMurid:m.idMurid,percubaan:no,mula:new Date(t).toISOString(),akhir:new Date(t).toISOString(),jenisPeranti:telefon?"telefon":"komputer",saizSkrin:telefon?"390x844":"1366x768",bilRekod:0,contoh:1};sesi.push(S)};
+      const rek=(no,e,dt)=>{t+=dt;const r={masa:new Date(t).toISOString(),nama:x.nama,kelas,percubaan:no,betul:"-",cubaan:"-",...e,idRekod:this.idRawak("r"),idMurid:m.idMurid,idSesi:S.idSesi,lama:0,contoh:1};
+        const id=R.idSoalan(r);if(id)r.idSoalan=id;cubaan.push(r);S.akhir=r.masa;S.bilRekod++};
+      // Masih ada masa dalam slot? Jika tidak, sambung pada slot seterusnya (sesi baharu) atau berhenti (kemajuan terhenti di situ)
+      const ruang=(no,perlu)=>{if(habis)return false;if(t+perlu<=slots[si].tamat)return true;
+        if(si+1<slots.length){si++;t=slots[si].mula+antara(1,6)*minit;bukaSesi(no);return true}habis=true;return false};
+      m.dicipta=new Date(t).toISOString();bukaSesi(1);rek(1,{jenis:"daftar",lokasi:"-",aktiviti:"Daftar masuk",jawapan:x.watak==="LP"?"Penjelajah perempuan":"Penjelajah lelaki"},antara(20,70)*saat);
+      const main=(no,sasaran,mahir,ulang)=>{const h={bintang:{},status:{},nota:{},lisan:{}};
+        URUT.some((k,ix)=>{const penuh=ix<sasaran.lokasi,separuh=!penuh&&ix===sasaran.lokasi&&sasaran.sedang;if(!penuh&&!separuh)return true;
+          if(!ruang(no,4*minit))return true;
+          const L=K.lokasi[k];t+=antara(.8,2.6)*minit*(ulang?.7:1);h.nota[k]=true;h.status[k]={status:"sedang",mula:new Date(t).toISOString(),tamat:null};
+          t+=antara(.5,1.6)*minit*(ulang?.5:1);let salah=0,henti=false;
+          for(const kump of BANK[k]){const soal=separuh?kump.s.slice(0,1+Math.floor(rawak()*2)):kump.s;
+            for(const [q,betul,lain] of soal){if(!ruang(no,30*saat)){henti=true;break}
+              const maks=lain.filter(v=>v!==betul).length+1,dipilih=new Set();let c=0,ok=false;
+              while(!ok&&c<maks){c++;ok=c===maks||rawak()<Math.min(.97,mahir+(SUKAR[kump.a]||0)+(c-1)*.3);let jaw=betul;
+                if(!ok){const pil=lain.filter(v=>v!==betul&&!dipilih.has(v));jaw=pil.length?pilih(pil):lain[0];dipilih.add(jaw)}
+                rek(no,{jenis:"jawapan",lokasi:L,aktiviti:kump.a,soalan:q,jawapan:jaw,betul:ok?"Ya":"Tidak",cubaan:c},antara(6,24)*saat*lambat);if(!ok)salah++}}
+            if(henti||separuh)break;
+            if(k===4)rek(no,{jenis:"kunci",lokasi:L,aktiviti:"Misi Tiga Kunci",jawapan:kump.a==="Kunci Am"?"am":"khas"},antara(40,90)*saat)}
+          if(henti||separuh)return true;
+          for(const q of LISAN[k]){const r=rawak(),pL=Math.min(.35,.05+Math.max(0,.72-mahir)*.6),st=r<pL?"dilangkau":r<pL+pRakam*(1-pL)?"dirakam":"tanpa rakaman";
+            rek(no,{jenis:"lisan",lokasi:L,aktiviti:"Bertutur",soalan:q,jawapan:{dirakam:"dirakam","tanpa rakaman":"disebut tanpa rakaman",dilangkau:"dilangkau"}[st],statusLisan:st,idRakaman:""},antara(20,55)*saat)}
+          h.lisan[k]=true;if(k===4)rek(no,{jenis:"kunci",lokasi:L,aktiviti:"Misi Tiga Kunci",jawapan:"suara"},antara(5,15)*saat);
+          const b=B.bintang(salah);h.bintang[k]=b;rek(no,{jenis:"selesai",lokasi:L,aktiviti:"Lokasi selesai",jawapan:`${b} bintang`},antara(8,20)*saat);
+          h.status[k]={status:"selesai",mula:h.status[k].mula,tamat:new Date(t).toISOString()};return false});
+        return h};
+      const kad={},lenc={},sejarah=[],sijilLama=[];let sijil=null,no=1;const jumlah=b=>Object.values(b).reduce((a,c)=>a+c,0);
+      const kumpul=h=>{Object.keys(h.bintang).forEach(k=>{const tm=h.status[k].tamat;(PKN.BegKata.KAD[k]||[]).forEach(([w])=>{if(!kad[w])kad[w]=tm});
+          const L=PKN.Lencana.SENARAI.find(z=>z.lokasi===+k);if(L&&!lenc[L.id])lenc[L.id]=tm;if(h.bintang[k]>=3&&!lenc.bintang)lenc.bintang=tm});
+        if([0,1,2,3,4,5].every(i=>h.lisan[i])&&!lenc.suara)lenc.suara=new Date(t).toISOString()};
+      const tamatPenuh=h=>{sijil={percubaan:no,tarikh:new Date(t).toISOString(),bintang:jumlah(h.bintang)};
+        rek(no,{jenis:"sijil",lokasi:"Peti Harta Karun",aktiviti:"Sijil Penjelajah Bahasa Cemerlang",jawapan:`${sijil.bintang} bintang`},antara(20,40)*saat);
+        rek(no,{jenis:"penamat",lokasi:"-",aktiviti:"Babak penutup",jawapan:"dipaparkan"},antara(5,10)*saat)};
+      // Jenis kemajuan (ditentukan mengikut kebolehan): baru bermula, 2/6, 4–5/6, 6/6, 6/6 + Main Sekali Lagi
+      const J=x.jenis,sasaran=J==="baru"?{lokasi:0,sedang:rawak()<.55}:J==="dua"?{lokasi:2+(rawak()<.35?1:0),sedang:rawak()<.5}:J==="empat"?{lokasi:4+(rawak()<.35?1:0),sedang:rawak()<.4}:{lokasi:6};
+      let h=J==="baru"&&!sasaran.sedang?{bintang:{},status:{},nota:{},lisan:{}}:main(1,sasaran,J==="ulang"?Math.max(.3,x.mahir-.18):x.mahir,false);kumpul(h);
+      if(Object.keys(h.bintang).length===6){tamatPenuh(h);
+        if(J==="ulang"&&!habis){sejarah.push({percubaan:no,tamat:sijil.tarikh,bintang:{...h.bintang},jumlahBintang:sijil.bintang});
+          rek(no,{jenis:"penamat",lokasi:"-",aktiviti:"Pilihan selepas tamat",jawapan:"Main Sekali Lagi"},antara(10,30)*saat);rek(no,{jenis:"main semula",lokasi:"-",aktiviti:"Percubaan baharu",jawapan:`Percubaan ${no+1}`},antara(3,8)*saat);
+          sijilLama.push(sijil);no++;t+=antara(.3,1)*minit;bukaSesi(no);
+          // Percubaan kedua: kebanyakan murid menamatkan semua lokasi dengan skor yang lebih baik
+          const s2=rawak()<.7?{lokasi:6}:{lokasi:4+Math.floor(rawak()*2),sedang:rawak()<.6};
+          h=main(no,s2,Math.min(.95,x.mahir+.15),true);kumpul(h);if(Object.keys(h.bintang).length===6)tamatPenuh(h);else sijil=sijilLama.pop()}}
+      const selesai6=Object.keys(h.bintang).length===6,bacaNota=rawak()<.4&&Object.keys(h.bintang).length>=3;
+      if(PKN.BegKata.semua().every(z=>kad[z.w]))lenc.kata=new Date(t).toISOString();if(bacaNota)lenc.buku=new Date(t).toISOString();
+      Object.assign(m,{percubaan:no,selesai:[0,1,2,3,4,5].map(i=>h.bintang[i]!==undefined),bintang:h.bintang,nota:h.nota,lisan:h.lisan,notaTab:bacaNota?{0:true,1:true,2:true}:{},petiDibuka:selesai6,
+        lencana:lenc,sijilLama,sejarah,statusLokasi:h.status,kadKata:kad,terakhirAktif:new Date(t).toISOString()});
+      if(sijil)m.sijil=sijil;murid.push(m)};
+    KELAS.forEach((KL,ci)=>{
+      // Perbezaan munasabah antara kelas: kelas pertama lebih mahir dan lebih jauh; kelas kedua lebih banyak bertutur dengan rakaman
+      const slots=slotKelas(ci),asas=[.74,.6,.68,.65][ci%4],pRakam=[.48,.64,.55,.58][ci%4];
+      const W=ci%2?[["baru",.14],["dua",.28],["empat",.26],["enam",.2],["ulang",.12]]:[["baru",.08],["dua",.16],["empat",.26],["enam",.3],["ulang",.2]];
+      const calon=KL.murid.map(z=>({...z,mahir:Math.min(.95,Math.max(.3,asas+(rawak()+rawak()+rawak()-1.5)*.22))}));
+      const ikut=calon.map(z=>({z,k:z.mahir+antara(-.12,.12)})).sort((a,b)=>a.k-b.k).map(o=>o.z);
+      const jenis=[];W.forEach(([j,w])=>{for(let i=0;i<Math.round(w*ikut.length);i++)jenis.push(j)});
+      ikut.forEach((z,i)=>z.jenis=jenis[i]||"empat");
+      calon.forEach(z=>janaMurid(z,KL.kelas,slots,pRakam,ci))});
+    await this._op("murid","readwrite",s=>{murid.forEach(x=>s.put(x))});await this._op("sesi","readwrite",s=>{sesi.forEach(x=>s.put(x))});await this._op("cubaan","readwrite",s=>{cubaan.forEach(x=>s.put(x))});
+    return{murid:murid.length,sesi:sesi.length,cubaan:cubaan.length,kelas:KELAS.map(k=>k.kelas)}};
+  // ---------- Skrin guru: Rekod Setiap Murid ----------
+  const tarikh=d=>d?new Date(d).toLocaleString("ms-MY",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"–";
+  const peratusPertama=rek=>{const p=rek.filter(r=>r.jenis==="jawapan"&&Number(r.cubaan)===1),b=p.filter(r=>r.betul==="Ya").length;return{b,j:p.length,teks:p.length?Math.round(b/p.length*100)+"%":"–"}};
+  PKN.MuridGuru={
+    kelas:"",
+    async muat(){const [murid,rek,sesi,rak]=await Promise.all([R.senaraiMurid(),R.semua(),R.semuaDalam("sesi"),R.senaraiRakaman()]);return{murid,rek,sesi,rak}},
+    async buka(){
+      const E=A.esc,D=await this.muat(),kls=[...new Set(D.murid.map(m=>m.kelas||""))].sort((a,b)=>a.localeCompare(b,"ms",{numeric:true}));
+      if(this.kelas&&!kls.includes(this.kelas))this.kelas="";
+      const L=D.murid.filter(m=>!this.kelas||(m.kelas||"")===this.kelas).sort(B._banding);
+      const lama={};D.rek.filter(r=>!r.idMurid).forEach(r=>{const k=r.nama+"|"+r.kelas;(lama[k]=lama[k]||[]).push(r)});
+      const kLama=Object.keys(lama).filter(k=>!this.kelas||lama[k][0].kelas===this.kelas);
+      const isi=document.createElement("div");isi.className="suara-guru murid-guru";
+      isi.innerHTML=`<p class="nota-privasi">👤 ${D.murid.length} murid dalam peranti ini${D.murid.some(m=>m.contoh)?` (termasuk ${D.murid.filter(m=>m.contoh).length} murid CONTOH)`:""}. Ketik nama murid untuk melihat rekodnya.</p>
+        <div class="penapis"><label>Kelas<select id="pKelasM"><option value="">Semua</option>${kls.map(k=>`<option value="${E(k)}"${k===this.kelas?" selected":""}>${E(k||"Tiada kelas")}</option>`).join("")}</select></label></div>
+        <div class="senarai-murid">${L.map(m=>B.barisMurid(m,false)).join("")||`<p class="arahan">Tiada murid.</p>`}</div>
+        ${kLama.length?`<h3 class="kumpulan">🗂️ Rekod lama tanpa profil (${kLama.length})</h3><p class="nota-kecil">Rekod versi 5.1.1 yang tidak dapat dipadankan dengan mana-mana murid.</p><div class="senarai-murid">${kLama.map(k=>{const r=lama[k][0];
+          return`<button type="button" class="baris-murid" data-lama="${E(k)}"><b>${E(r.nama||"Tanpa nama")}</b><small>${E(r.kelas||"Tiada kelas")} · ${lama[k].length} rekod</small><span class="kemajuan-baris">${new Set(lama[k].filter(x=>x.jenis==="selesai").map(x=>x.lokasi)).size}/6</span></button>`}).join("")}</div>`:""}`;
+      isi.querySelector("#pKelasM").onchange=e=>{this.kelas=e.target.value;this.buka()};
+      isi.querySelectorAll(".baris-murid[data-id]").forEach(b=>b.onclick=()=>this.butiran(b.dataset.id));
+      isi.querySelectorAll(".baris-murid[data-lama]").forEach(b=>b.onclick=()=>this.butiranLama(b.dataset.lama,lama[b.dataset.lama]));
+      A.bukaPapan({ikon:"👤",tajuk:"Rekod Setiap Murid",sub:"Untuk guru sahaja",isi,kaki:[A.butang("◀ Menu Guru","kayu",()=>PKN.MenuGuru.buka()),A.butang("✔ Tutup","emas",()=>A.tutup())]});
+      document.getElementById("modalPapan").classList.add("lebar")},
+    async butiran(id){
+      const E=A.esc,D=await this.muat(),m=D.murid.find(x=>x.idMurid===id);if(!m){this.buka();return}
+      const rek=D.rek.filter(r=>r.idMurid===id),ses=D.sesi.filter(s=>s.idMurid===id),rak=D.rak.filter(r=>r.idMurid===id),U=PKN.Urutan;
+      const no=m.percubaan||1,pp=peratusPertama(rek),ppKini=peratusPertama(rek.filter(r=>(r.percubaan||1)===no));
+      const minit=Math.round(ses.reduce((a,s)=>a+Math.max(0,(Date.parse(s.akhir)||0)-(Date.parse(s.mula)||0)),0)/6e4);
+      const bin=Object.values(m.bintang||{}).reduce((a,b)=>a+b,0),selesai=(m.selesai||[]).filter(Boolean).length;
+      const lenc=PKN.Lencana.SENARAI.filter(L=>m.lencana&&m.lencana[L.id]),kad=PKN.BegKata.dapat(m).length,dinilai=rak.filter(r=>r.penilaian);
+      const LBL={selesai:"✓ Selesai",sedang:"▶ Sedang",belum:"– Belum"};
+      const isi=document.createElement("div");isi.className="suara-guru murid-guru";
+      isi.innerHTML=`<div class="kepala-murid"><b>${E(m.nama||"Penjelajah")}</b>${m.contoh?'<span class="lencana-contoh">CONTOH</span>':""}<small>${E(m.kelas||"Tiada kelas")} · Kod ${E(m.kodPaparan||"–")} · ${m.watak==="LP"?"Penjelajah Perempuan":"Penjelajah Lelaki"}${m.asal==="v5.1.1"?" · dipindahkan daripada versi 5.1.1":""}</small>
+          <small>Didaftarkan: ${tarikh(m.dicipta)} · Aktif terakhir: ${tarikh(m.terakhirAktif)}</small></div>
+        <div class="ringkas-murid">
+          <div><b>${selesai}/6</b><small>lokasi selesai (percubaan ${no})</small></div>
+          <div><b>⭐ ${bin}</b><small>bintang (percubaan ${no})</small></div>
+          <div><b>${ppKini.teks}</b><small>betul pada cubaan pertama (${ppKini.b}/${ppKini.j})</small></div>
+          <div><b>${pp.teks}</b><small>betul pada cubaan pertama, semua percubaan (${pp.b}/${pp.j})</small></div>
+          <div><b>${no}</b><small>percubaan</small></div>
+          <div><b>${ses.length}</b><small>sesi · kira-kira ${minit} minit</small></div>
+          <div><b>${lenc.length}/${PKN.Lencana.SENARAI.length}</b><small>lencana</small></div>
+          <div><b>${kad}/${PKN.BegKata.jumlah()}</b><small>kad Beg Kata</small></div>
+          <div><b>${rak.length}</b><small>rakaman suara (${dinilai.length} dinilai)</small></div></div>
+        <h3 class="kumpulan">🧭 Status lokasi (percubaan ${no})</h3>
+        <div class="status-lokasi">${U.URUT.map(k=>{const s=R.statusLokasi(m,k);return`<div class="sl ${s.status}"><b>${U.no(k)} · ${E(U.nama(k))}</b><span class="tag">${LBL[s.status]}</span>${m.bintang&&m.bintang[k]?` · ${"⭐".repeat(m.bintang[k])}`:""}
+          ${s.mula?`<br><small>Mula: ${tarikh(s.mula)}</small>`:""}${s.tamat?`<br><small>Tamat: ${tarikh(s.tamat)}</small>`:""}</div>`}).join("")}</div>
+        <h3 class="kumpulan">🏅 Lencana</h3>${lenc.length?`<ul class="senarai-ringkas">${lenc.map(L=>`<li>${L.ikon} ${E(L.nama)} · ${tarikh(m.lencana[L.id])}</li>`).join("")}</ul>`:`<p class="nota-kecil">Belum ada lencana.</p>`}
+        <h3 class="kumpulan">🔁 Percubaan terdahulu</h3>${(m.sejarah||[]).length?`<ul class="senarai-ringkas">${m.sejarah.map(h=>`<li>Percubaan ${h.percubaan}: ${Object.keys(h.bintang||{}).length}/6 lokasi, ⭐ ${h.jumlahBintang??0} · ${tarikh(h.tamat)}${h.setSemula?" · set semula oleh guru":""}</li>`).join("")}</ul>`:`<p class="nota-kecil">Tiada.</p>`}
+        ${m.sijil||(m.sijilLama||[]).length?`<h3 class="kumpulan">📜 Sijil</h3><ul class="senarai-ringkas">${[...(m.sijilLama||[]),...(m.sijil?[m.sijil]:[])].map(s=>`<li>Percubaan ${s.percubaan}: ⭐ ${s.bintang} · ${tarikh(s.tarikh)}</li>`).join("")}</ul>`:""}`;
+      const kaki=[A.butang("◀ Senarai murid","kayu",()=>this.buka())];
+      if(rak.length)kaki.push(A.butang(`🎙️ Rakaman (${rak.length})`,"emas kecil",()=>{PKN.SuaraGuru.penapis={murid:id,kelas:"",lokasi:"",nilai:""};PKN.SuaraGuru.buka()}));
+      A.bukaPapan({ikon:"👤",tajuk:"Rekod Murid",sub:m.nama||"Penjelajah",isi,kaki});document.getElementById("modalPapan").classList.add("lebar")},
+    butiranLama(k,rek){
+      const E=A.esc,r0=rek[0]||{},pp=peratusPertama(rek),lok=[...new Set(rek.filter(x=>x.jenis==="selesai").map(x=>x.lokasi))],masa=rek.map(r=>r.masa).filter(Boolean).sort();
+      const isi=document.createElement("div");isi.className="suara-guru murid-guru";
+      isi.innerHTML=`<div class="kepala-murid"><b>${E(r0.nama||"Tanpa nama")}</b><span class="lencana-contoh">REKOD LAMA</span><small>${E(r0.kelas||"Tiada kelas")} · rekod versi 5.1.1 tanpa profil murid</small><small>${tarikh(masa[0])} hingga ${tarikh(masa[masa.length-1])}</small></div>
+        <div class="ringkas-murid"><div><b>${lok.length}/6</b><small>lokasi pernah selesai</small></div><div><b>${pp.teks}</b><small>betul pada cubaan pertama (${pp.b}/${pp.j})</small></div><div><b>${rek.length}</b><small>rekod</small></div></div>
+        ${lok.length?`<ul class="senarai-ringkas">${lok.map(l=>`<li>✓ ${E(l)}</li>`).join("")}</ul>`:""}<p class="nota-kecil">Catatan: dalam versi 5.1.1, kiraan cubaan bagi Gua Misteri, Rumah Api dan Cari label sentiasa 1.</p>`;
+      A.bukaPapan({ikon:"🗂️",tajuk:"Rekod Lama",sub:r0.nama||"",isi,kaki:[A.butang("◀ Senarai murid","kayu",()=>this.buka())]});document.getElementById("modalPapan").classList.add("lebar")}
+  };
+  // ---------- Menu Guru: butang dan bahagian baharu ----------
+  const MGB=PKN.MenuGuru.buka.bind(PKN.MenuGuru);
+  PKN.MenuGuru.buka=function(){MGB();const isi=document.querySelector("#modalPapan .tetapan");if(!isi)return;
+    const r1=isi.querySelector(".bahagian-tetapan"),b1=r1&&r1.querySelector(".btn");
+    if(r1){const b=A.butang("👤 Rekod Setiap Murid","emas kecil",()=>PKN.MuridGuru.buka());if(b1&&b1.nextSibling)r1.insertBefore(b,b1.nextSibling);else r1.append(b)}
+    // Sandaran JSON
+    const rj=PKN.Tetapan.bahagian(isi,"💾 Sandaran rekod (fail JSON)");
+    rj.insertAdjacentHTML("beforeend",`<p class="nota-kecil">Simpan semua murid, sesi, rekod jawapan dan rakaman ke dalam satu fail, atau gabungkan fail daripada peranti lain. Import tidak memadam atau menindih rekod sedia ada.</p><div class="baris-butang kiri"></div><div class="maklum maklum-json"></div><input type="file" accept=".json,application/json" hidden>`);
+    const bb=rj.querySelector(".baris-butang"),mk=rj.querySelector(".maklum"),fail=rj.querySelector("input[type=file]");
+    const eks=async audio=>{if(R.storanGagal){mk.className="maklum salah";mk.textContent="Storan peranti tidak tersedia.";return}
+      mk.className="maklum maklum-json";mk.textContent="Sedang menyediakan fail…";const o=await R.eksport(audio),t=JSON.stringify(o);
+      const ok=muatTurun(t,`rekod-pengembaraan-kata-nama-${new Date().toISOString().slice(0,10)}${audio?"-dengan-audio":""}.json`,"application/json");
+      mk.className=ok?"maklum betul maklum-json":"maklum salah maklum-json";
+      mk.textContent=ok?`Fail dimuat turun: ${o.murid.length} murid, ${o.sesi.length} sesi, ${o.cubaan.length} rekod jawapan, ${o.rakaman.length} rakaman${audio?" (dengan audio)":" (tanpa audio)"}. Saiz: ${(t.length/1048576).toFixed(2)} MB.`:"Fail tidak dapat dimuat turun dalam pelayar ini."};
+    bb.append(A.butang("⬇ Eksport (tanpa audio)","kayu kecil",()=>eks(false)),A.butang("⬇ Eksport (dengan audio)","kayu kecil",()=>eks(true)),A.butang("⬆ Import fail JSON","kayu kecil",()=>{fail.value="";fail.click()}));
+    fail.onchange=async()=>{const f=fail.files&&fail.files[0];if(!f)return;mk.className="maklum maklum-json";mk.textContent="Sedang membaca fail…";
+      try{const o=JSON.parse(await f.text()),h=await R.importJson(o);B._senarai=await R.senaraiMurid();
+        mk.className="maklum betul maklum-json";mk.textContent=`Import selesai: ${h.murid} murid baharu, ${h.muridKemas} murid dikemas kini, ${h.sesi} sesi, ${h.cubaan} rekod jawapan, ${h.rakaman} rakaman (${h.audio} dengan audio). ${h.langkau} item sudah ada dan dilangkau.`;
+        if(h.aktifDikemas){PKN.UI.toast("Rekod murid semasa dikemas kini daripada fail. Halaman dimuat semula…",3000);setTimeout(()=>location.reload(),2500)}}
+      catch(e){mk.className="maklum salah maklum-json";mk.textContent=e&&e.message==="storan"?"Storan peranti tidak tersedia.":"Fail ini bukan fail rekod Pengembaraan Kata Nama yang sah."}};
+    // Data contoh
+    const rc=PKN.Tetapan.bahagian(isi,"🧪 Data contoh (demonstrasi)");
+    rc.insertAdjacentHTML("beforeend",`<p class="nota-kecil">Data demonstrasi berlabel CONTOH, tanpa audio, dalam waktu sekolah minggu ini. Tulis satu baris bagi setiap kelas: <b>Kelas: Nama, Nama (P), …</b> ((P) = perempuan). Senarai nama disimpan dalam peranti ini sahaja dan tidak dimasukkan ke dalam fail permainan. Rakaman sebenar tidak dipadam oleh "Padam data contoh".</p>
+      <label class="medan">Senarai nama murid<textarea id="tSenaraiContoh" rows="5" spellcheck="false" placeholder="Contoh format (satu baris bagi setiap kelas):&#10;1 Bestari: Aisyah (P), Danial, Mei Ling (P)&#10;2 Cerdik: Kavin, Nurul Huda (P), Harith" style="width:100%;font:inherit;font-size:.9375rem;padding:6px 8px;border:2px solid #8B5A2B;border-radius:10px;background:#FFFFFF;color:#111"></textarea></label>
+      <div class="baris-butang kiri"></div><div class="maklum"></div>`);
+    const bc=rc.querySelector(".baris-butang"),mc=rc.querySelector(".maklum"),ts=rc.querySelector("#tSenaraiContoh");
+    R.tetapan("senaraiContoh").then(v=>{ts.value=v&&v!==R.SENARAI_CONTOH_ASAL?v:""});// pemurnian 17 Nov 2026: kosong secara lalai, contoh format sebagai teks kelabu
+    bc.append(A.butang("🧪 Jana data contoh","kayu kecil",async()=>{if(R.storanGagal){mc.className="maklum salah";mc.textContent="Storan peranti tidak tersedia.";return}
+        if(B.profil&&B.profil.contoh){mc.className="maklum salah";mc.textContent="Murid CONTOH sedang digunakan. Tukar kepada murid lain dahulu.";return}
+        const kls=R.huraiSenarai(ts.value);if(!kls.length){mc.className="maklum salah";mc.textContent="Senarai tidak dapat dibaca. Contoh: 1 Bestari: Aisyah (P), Danial, Mei Ling (P)";return}
+        mc.className="maklum";mc.textContent="Sedang menyediakan…";await R.tetapan("senaraiContoh",ts.value);const h=await R.tambahContoh(ts.value);B._senarai=await R.senaraiMurid();
+        mc.className="maklum betul";mc.textContent=`Data contoh sedia: ${h.murid} murid (${h.kelas.join(", ")}), ${h.sesi} sesi, ${h.cubaan} rekod. Data contoh lama diganti. Lihat "👤 Rekod Setiap Murid".`}),
+      A.butang("🗑 Padam data contoh","kayu kecil",()=>PKN.Sahkan({tajuk:"Padam Data Contoh",ya:"Ya, padam",
+        mesej:"Padam semua murid dan rekod <b>CONTOH</b>? Murid dan rekod sebenar tidak terjejas.",kembali:()=>PKN.MenuGuru.buka(),
+        teruskan:async()=>{const aktif=B.profil&&B.profil.contoh;const h=await R.padamContoh();B._senarai=await R.senaraiMurid();
+          PKN.UI.toast(`Data contoh dipadam: ${h.murid} murid, ${h.cubaan} rekod.`,3000);if(aktif){await R.tetapan("muridAktif","");setTimeout(()=>location.reload(),900)}else PKN.MenuGuru.buka()}})));
+  };
+})();
+</script>
+<style>
+/* v5.2 Fasa 4: Analisis Kelas (papan putih, tulisan hitam; bar CSS tanpa library) */
+.analisis .nota-data{background:#FFFFFF!important;color:#111!important;border:2px solid #B26A00;border-radius:12px;padding:6px 10px;font-size:.9rem;margin:6px 0}
+.analisis .bar-lokasi{display:grid;grid-template-columns:minmax(118px,34%) 1fr auto;align-items:center;gap:4px 10px;margin:6px 0;font-size:.9375rem;color:#111!important}
+.analisis .bar-lokasi .trek-bar{height:18px;background:#EFE4D2;border-radius:9px;overflow:hidden;border:1px solid #C9A27A}
+.analisis .bar-lokasi .trek-bar i{display:block;height:100%;background:#2E7D32;border-radius:9px 0 0 9px}
+.analisis .bar-lokasi .nilai{font-weight:800;white-space:nowrap;min-width:3.6em;text-align:right}
+.analisis .bar-lokasi small{grid-column:2/-1;font-size:.8125rem;color:#333!important;margin-top:-4px}
+.analisis .kad-soalan{background:#FFFFFF!important;color:#111!important;border:2px solid #C9A27A;border-radius:12px;padding:8px 10px;margin:0 0 8px}
+.analisis .kad-soalan .atas-soalan{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.analisis .kad-soalan b.peratus{font-size:1.15rem;color:#8A1C1C!important;white-space:nowrap}
+.analisis .kad-soalan .teks-soalan{font-weight:700;overflow-wrap:anywhere}
+.analisis .kad-soalan small{display:block;font-size:.8125rem;color:#333!important}
+.analisis .baris-suara{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.analisis .baris-suara span{background:#FFFFFF!important;color:#111!important;border:2px solid #E8D6B5;border-radius:10px;padding:4px 10px;font-size:.9rem}
+.analisis .bungkus-jadual{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:6px 0 10px}
+.analisis table.banding{border-collapse:collapse;width:100%;min-width:300px;font-size:.875rem;background:#FFFFFF!important;color:#111!important}
+.analisis table.banding th,.analisis table.banding td{border:1px solid #C9A27A;padding:5px 7px;text-align:center;color:#111!important}
+.analisis table.banding th:first-child,.analisis table.banding td:first-child{text-align:left}
+.analisis table.banding thead th{background:#FFF3C4!important;font-weight:800}
+.analisis table.banding tr.subtajuk td{background:#F6EEDF!important;font-weight:800}
+</style>
+<script>
+/* FAIL MASA DEPAN: js/ui/AnalisisKelas.js
+   v5.2 Fasa 4: Analisis Kelas (Menu Guru). Dikira semasa skrin dibuka daripada rekod sedia ada (tiada data pendua).
+   Definisi (keputusan Cikgu Faris, 17 Nov 2026):
+   - "Lokasi selesai": lokasi yang pernah diselesaikan dalam mana-mana percubaan (selesai semasa + sejarah percubaan).
+   - "% betul cubaan pertama" dan "soalan sukar": rekod jawapan daripada PERCUBAAN PERTAMA murid sahaja, cubaan = 1.
+   - Purata bintang: bintang terbaik bagi setiap lokasi yang pernah selesai (1–3), dipuratakan.
+   - Rekod lama v5.1.1 tanpa profil murid tidak dikira. Rujukan: dokumentasi/REKA-BENTUK-SISTEM-REKOD-v5.2.md Bahagian 12. */
+(function(){
+  const R=PKN.Rekod,A=PKN.Aktiviti,B=PKN.Belajar;
+  const pct=(a,b)=>b?Math.round(a/b*100):null,teksPct=v=>v===null?"–":v+"%",satu=v=>v===null||isNaN(v)?"–":v.toFixed(1);
+  const statusLisan=r=>r.statusLisan||(/tanpa rakaman/.test(r.jawapan||"")?"tanpa rakaman":r.jawapan==="dilangkau"?"dilangkau":r.jawapan==="dirakam"?"dirakam":"tanpa rakaman");
+  PKN.AnalisisKelas={
+    kelas:"",sumber:"semua",
+    // Kira semua angka bagi satu kumpulan murid (M) dengan rekod (C) dan rakaman (K) mereka
+    kira(M,C,K){
+      const URUT=PKN.Urutan.URUT,ids=new Set(M.map(m=>m.idMurid)),rek=C.filter(r=>ids.has(r.idMurid)),rak=K.filter(r=>ids.has(r.idMurid));
+      const pernah=new Map(M.map(m=>[m.idMurid,PKN.BegKata.lokasiPernah(m)]));
+      // bintang terbaik setiap lokasi (percubaan semasa dan sejarah)
+      const bintangTerbaik=m=>{const b={};const tambah=o=>Object.entries(o||{}).forEach(([k,v])=>{b[k]=Math.max(b[k]||0,+v||0)});tambah(m.bintang);(m.sejarah||[]).forEach(h=>tambah(h&&h.bintang));return b};
+      const BT=M.map(bintangTerbaik),semuaBintang=BT.flatMap(b=>Object.values(b).filter(v=>v>0));
+      const lokasi=URUT.map(k=>{const n=M.filter(m=>pernah.get(m.idMurid).has(k)).length,bs=BT.map(b=>b[k]).filter(v=>v>0);
+        return{k,n,pct:pct(n,M.length),bintang:bs.length?bs.reduce((a,c)=>a+c,0)/bs.length:null}});
+      const p1=rek.filter(r=>r.jenis==="jawapan"&&(Number(r.percubaan)||1)===1&&Number(r.cubaan)===1),betul1=p1.filter(r=>r.betul==="Ya").length;
+      const soal=new Map();p1.forEach(r=>{const id=r.idSoalan||R.idSoalan(r);if(!id)return;let s=soal.get(id);if(!s){s={id,soalan:r.soalan||"",aktiviti:r.aktiviti||"",lokasi:r.lokasi||"",murid:new Set(),salah:0,n:0};soal.set(id,s)}
+        s.n++;s.murid.add(r.idMurid);if(r.betul!=="Ya")s.salah++});
+      const sukar=[...soal.values()].filter(s=>s.murid.size>=5).map(s=>({...s,pct:pct(s.salah,s.n)})).sort((a,b)=>b.pct-a.pct||b.n-a.n).slice(0,5);
+      const lisan={dirakam:0,"tanpa rakaman":0,dilangkau:0};rek.filter(r=>r.jenis==="lisan").forEach(r=>{const s=statusLisan(r);lisan[s]=(lisan[s]||0)+1});
+      const nilai={Jelas:0,"Perlu bimbingan":0,belum:0};rak.forEach(r=>{if(r.penilaian==="Jelas")nilai.Jelas++;else if(r.penilaian==="Perlu bimbingan")nilai["Perlu bimbingan"]++;else nilai.belum++});
+      const jumLisan=lisan.dirakam+lisan["tanpa rakaman"]+lisan.dilangkau;
+      return{murid:M.length,contoh:M.filter(m=>m.contoh).length,
+        purataLokasi:M.length?M.reduce((a,m)=>a+pernah.get(m.idMurid).size,0)/M.length:null,
+        tamat:M.filter(m=>pernah.get(m.idMurid).size>=6).length,
+        betul1,jawapan1:p1.length,pctBetul1:pct(betul1,p1.length),
+        purataBintang:semuaBintang.length?semuaBintang.reduce((a,c)=>a+c,0)/semuaBintang.length:null,
+        lokasi,sukar,lisan,jumLisan,nilai,rakaman:rak.length}},
+    async buka(){
+      const E=A.esc,[murid,C,K]=await Promise.all([R.senaraiMurid(),R.semua(),R.senaraiRakaman()]);
+      const ikutSumber=murid.filter(m=>this.sumber==="semua"||(this.sumber==="contoh"?!!m.contoh:!m.contoh));
+      const kls=[...new Set(ikutSumber.map(m=>m.kelas||""))].sort((a,b)=>a.localeCompare(b,"ms",{numeric:true}));
+      if(this.kelas&&!kls.includes(this.kelas))this.kelas="";
+      const M=ikutSumber.filter(m=>!this.kelas||(m.kelas||"")===this.kelas),H=this.kira(M,C,K),U=PKN.Urutan;
+      const lamaTanpaProfil=C.filter(r=>!r.idMurid).length;
+      const isi=document.createElement("div");isi.className="suara-guru analisis";
+      const labelKelas=k=>{const mk=ikutSumber.filter(m=>(m.kelas||"")===k);return E(k||"Tiada kelas")+(mk.length&&mk.every(m=>m.contoh)?" (CONTOH)":"")};
+      let html=`<div class="penapis"><label>Kelas<select id="aKelas"><option value="">Semua kelas</option>${kls.map(k=>`<option value="${E(k)}"${k===this.kelas?" selected":""}>${labelKelas(k)}</option>`).join("")}</select></label>
+        <label>Data<select id="aSumber">${[["semua","Semua (sebenar dan contoh)"],["sebenar","Sebenar sahaja"],["contoh","Contoh sahaja"]].map(([v,t])=>`<option value="${v}"${v===this.sumber?" selected":""}>${t}</option>`).join("")}</select></label></div>`;
+      if(H.contoh)html+=`<p class="nota-data">⚠️ Termasuk <b>${H.contoh}</b> murid <span class="lencana-contoh">CONTOH</span> (data demonstrasi).${H.contoh<H.murid?` ${H.murid-H.contoh} murid sebenar.`:""}</p>`;
+      if(!H.murid){html+=`<p class="arahan">Tiada murid bagi pilihan ini.</p>`}
+      else{
+        // W2: kad ringkasan
+        html+=`<h3 class="kumpulan">📊 Ringkasan ${this.kelas?E(this.kelas):"semua kelas"}</h3><div class="ringkas-murid">
+          <div><b>${H.murid}</b><small>murid</small></div>
+          <div><b>${satu(H.purataLokasi)}/6</b><small>purata lokasi selesai</small></div>
+          <div><b>${teksPct(pct(H.tamat,H.murid))}</b><small>tamat 6/6 (${H.tamat} murid)</small></div>
+          <div><b>${teksPct(H.pctBetul1)}</b><small>betul pada cubaan pertama (${H.betul1}/${H.jawapan1})</small></div>
+          <div><b>⭐ ${satu(H.purataBintang)}</b><small>purata bintang setiap lokasi (daripada 3)</small></div></div>`;
+        // W3: peratus selesai setiap lokasi
+        html+=`<h3 class="kumpulan">🧭 Murid yang selesai setiap lokasi</h3>${H.lokasi.map(L=>`<div class="bar-lokasi"><span>${U.no(L.k)} · ${E(U.nama(L.k))}</span>
+          <div class="trek-bar" role="img" aria-label="${L.pct}%"><i style="width:${L.pct||0}%"></i></div><span class="nilai">${teksPct(L.pct)}</span>
+          <small>${L.n}/${H.murid} murid${L.bintang!==null?` · purata ⭐ ${L.bintang.toFixed(1)}`:""}</small></div>`).join("")}`;
+        // W4: 5 soalan paling sukar
+        html+=`<h3 class="kumpulan">❗ 5 soalan paling sukar</h3><p class="nota-kecil">Peratus salah pada cubaan pertama, percubaan pertama setiap murid. Hanya soalan yang dijawab oleh sekurang-kurangnya 5 murid.</p>
+          ${H.sukar.length?H.sukar.map((s,i)=>`<div class="kad-soalan"><div class="atas-soalan"><span class="teks-soalan">${i+1}. ${E(s.soalan)}</span><b class="peratus">${s.pct}% salah</b></div>
+            <small>${E(s.lokasi)} · ${E(s.aktiviti)} · ${s.salah}/${s.n} murid salah pada cubaan pertama</small></div>`).join(""):`<p class="nota-kecil">Belum cukup data (perlu sekurang-kurangnya 5 murid bagi setiap soalan).</p>`}`;
+        // W5: bertutur dan penilaian suara
+        const L=H.lisan,J=H.jumLisan;
+        html+=`<h3 class="kumpulan">🎙️ Bertutur dan penilaian suara</h3>
+          <div class="baris-suara"><span>🔴 Dirakam: <b>${L.dirakam}</b> (${teksPct(pct(L.dirakam,J))})</span><span>🗣️ Tanpa rakaman: <b>${L["tanpa rakaman"]}</b> (${teksPct(pct(L["tanpa rakaman"],J))})</span><span>⏭️ Dilangkau: <b>${L.dilangkau}</b> (${teksPct(pct(L.dilangkau,J))})</span></div>
+          <div class="baris-suara"><span>🎧 Rakaman disimpan: <b>${H.rakaman}</b></span><span>✔ Jelas: <b>${H.nilai.Jelas}</b></span><span>Perlu bimbingan: <b>${H.nilai["Perlu bimbingan"]}</b></span><span>Belum dinilai: <b>${H.nilai.belum}</b></span></div>`;
+        // W6: perbandingan kelas
+        if(!this.kelas&&kls.length>=2){
+          const per=kls.map(k=>({k,H:this.kira(ikutSumber.filter(m=>(m.kelas||"")===k),C,K)}));
+          const baris=(t,f)=>`<tr><td>${t}</td>${per.map(p=>`<td>${f(p.H)}</td>`).join("")}</tr>`;
+          html+=`<h3 class="kumpulan">⚖️ Perbandingan kelas</h3><div class="bungkus-jadual"><table class="banding"><thead><tr><th>Perkara</th>${per.map(p=>`<th>${labelKelas(p.k)}</th>`).join("")}</tr></thead><tbody>
+            ${baris("Murid",h=>h.murid)}${baris("Purata lokasi selesai",h=>satu(h.purataLokasi)+"/6")}${baris("Tamat 6/6",h=>teksPct(pct(h.tamat,h.murid)))}
+            ${baris("Betul cubaan pertama",h=>teksPct(h.pctBetul1))}${baris("Purata bintang",h=>satu(h.purataBintang))}
+            <tr class="subtajuk"><td colspan="${per.length+1}">Murid yang selesai lokasi</td></tr>
+            ${H.lokasi.map((x,i)=>baris(`${U.no(x.k)} · ${E(U.nama(x.k))}`,h=>teksPct(h.lokasi[i].pct))).join("")}
+            <tr class="subtajuk"><td colspan="${per.length+1}">Bertutur dan suara</td></tr>
+            ${baris("Dirakam",h=>teksPct(pct(h.lisan.dirakam,h.jumLisan)))}${baris("Dilangkau",h=>teksPct(pct(h.lisan.dilangkau,h.jumLisan)))}
+            ${baris("Rakaman Jelas",h=>`${h.nilai.Jelas}/${h.rakaman}`)}${baris("Soalan paling sukar",h=>h.sukar[0]?`${E(h.sukar[0].soalan)} (${h.sukar[0].pct}%)`:"–")}
+            </tbody></table></div>`}
+      }
+      if(lamaTanpaProfil)html+=`<p class="nota-kecil">${lamaTanpaProfil} rekod lama versi 5.1.1 tanpa profil murid tidak dikira dalam analisis.</p>`;
+      isi.innerHTML=html;
+      isi.querySelector("#aKelas").onchange=e=>{this.kelas=e.target.value;this.buka()};
+      isi.querySelector("#aSumber").onchange=e=>{this.sumber=e.target.value;this.buka()};
+      A.bukaPapan({ikon:"📊",tajuk:"Analisis Kelas",sub:"Untuk guru sahaja",isi,kaki:[A.butang("◀ Menu Guru","kayu",()=>PKN.MenuGuru.buka()),A.butang("✔ Tutup","emas",()=>A.tutup())]});
+      document.getElementById("modalPapan").classList.add("lebar")}
+  };
+  // Menu Guru: butang "📊 Analisis Kelas" selepas "👤 Rekod Setiap Murid"
+  const MGB=PKN.MenuGuru.buka.bind(PKN.MenuGuru);
+  PKN.MenuGuru.buka=function(){MGB();const r1=document.querySelector("#modalPapan .tetapan .bahagian-tetapan");if(!r1)return;
+    const b=A.butang("📊 Analisis Kelas","emas kecil",()=>PKN.AnalisisKelas.buka()),sm=[...r1.querySelectorAll(".btn")].find(x=>/Rekod Setiap Murid/.test(x.textContent));
+    if(sm&&sm.nextSibling)r1.insertBefore(b,sm.nextSibling);else r1.append(b)};
+})();
+</script>
+<style>
+/* v5.2 Fasa 4 (pemurnian 17 Nov 2026): susunan butang dalam Menu Guru dan Tetapan. Butang yang terus berada dalam bahagian
+   (contoh "Rekod murid") dahulu berbaris sebagai elemen sebaris tanpa jarak menegak, jadi baris kedua melekat pada baris pertama.
+   Kini setiap bahagian ialah flex dengan jarak seragam 8 px (menegak) dan 10 px (mendatar). */
+.tetapan .bahagian-tetapan{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.tetapan .bahagian-tetapan>*{margin-top:0;margin-bottom:0}
+.tetapan .bahagian-tetapan>:not(.btn){flex:1 1 100%}
+.tetapan .bahagian-tetapan>.btn{margin:0}
+</style>
+<style>
+/* v5.2 Fasa 4 (pemurnian 17 Nov 2026): Rekod Setiap Murid yang lebih jelas (papan putih, tulisan hitam) */
+#tSenaraiContoh::placeholder{color:#6B6B6B;opacity:1}
+.murid-guru ol.langkah-guru{display:flex;flex-wrap:wrap;gap:6px 8px;list-style:none;margin:0 0 6px;padding:0}
+.murid-guru ol.langkah-guru li{background:#FFFFFF!important;color:#111!important;border:2px solid #2F80C9;border-radius:999px;padding:3px 12px 3px 4px;font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.murid-guru ol.langkah-guru li b{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#2F80C9!important;color:#FFFFFF!important;font-size:.85rem}
+.murid-guru input.cari-murid{font:inherit;font-size:1rem;min-height:40px;padding:4px 8px;margin-top:2px;border:2px solid #8B5A2B;border-radius:10px;background:#FFFFFF!important;color:#111!important;width:100%;box-sizing:border-box}
+.murid-guru input.cari-murid::placeholder{color:#6B6B6B;opacity:1}
+.murid-guru .baris-kiraan{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;margin:4px 0 8px}
+.murid-guru .baris-kiraan .kiraan{font-size:.9rem;color:#111!important;font-weight:700}
+.murid-guru .baris-kiraan .btn{margin:0}
+.murid-guru .senarai-murid{display:flex;flex-direction:column;gap:8px}
+.baris-murid.baris2{grid-template-columns:1fr auto;gap:2px 12px}
+.baris-murid.baris2 .kanan{grid-column:2;grid-row:1/span 2;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:92px}
+.baris-murid.baris2 .kanan .angka{font-weight:800;font-size:.95rem;color:#111!important;white-space:nowrap}
+.bar-mini{display:block;width:92px;height:10px;background:#EFE4D2;border:1px solid #C9A27A;border-radius:6px;overflow:hidden}
+.bar-mini i{display:block;height:100%;background:#2E7D32}
+.murid-guru .ringkas-murid .bar-mini{width:100%;margin:4px 0 2px}
+.murid-guru .ringkas-murid small.kini{display:block;font-weight:700;color:#1B5E20!important;margin-top:2px}
+.murid-guru .kepala-murid small.halus{font-size:.78rem;color:#555!important}
+.murid-guru ol.status2{list-style:none;margin:6px 0 4px;padding:0;display:flex;flex-direction:column;gap:4px}
+.murid-guru ol.status2 li{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:0 8px;background:#FFFFFF!important;color:#111!important;border:2px solid #C9A27A;border-radius:10px;padding:5px 10px;font-size:.9375rem}
+.murid-guru ol.status2 li .tanda2{font-weight:800;text-align:center;font-size:1.05rem}
+.murid-guru ol.status2 li small{grid-column:2/-1;font-size:.8125rem;color:#333!important}
+.murid-guru ol.status2 li.selesai{border-color:#2E7D32}.murid-guru ol.status2 li.selesai .tanda2{color:#1B5E20!important}
+.murid-guru ol.status2 li.sedang{border-color:#B26A00}.murid-guru ol.status2 li.sedang .tanda2{color:#7A4A00!important}
+.murid-guru ol.status2 li.belum{border-style:dashed}.murid-guru ol.status2 li.belum .tanda2{color:#555!important}
+.murid-guru details.lipat-guru{background:#FFFFFF!important;color:#111!important;border:2px solid #E8D6B5;border-radius:12px;margin:10px 0 0;padding:0 10px}
+.murid-guru details.lipat-guru>summary{cursor:pointer;font-weight:800;font-size:1rem;padding:10px 2px;min-height:24px;color:#111!important}
+.murid-guru details.lipat-guru[open]>summary{border-bottom:2px solid #E8D6B5;margin-bottom:6px}
+.murid-guru details.lipat-guru>:last-child{margin-bottom:10px}
+.murid-guru .zon-bahaya{background:#FFFFFF!important;color:#111!important;border:2px dashed #B3261E;border-radius:12px;padding:8px 10px;margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.murid-guru .zon-bahaya p{margin:0;flex:1 1 220px;font-size:.875rem;color:#333!important}
+.murid-guru .zon-bahaya .btn{margin:0}
+.panel-padam .tempat-eksport{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 2px}
+.panel-padam .tempat-eksport .btn{margin:0}
+.panel-padam .tempat-eksport .maklum{margin:0;flex:1 1 200px}
+</style>
+<script>
+/* v5.2 Fasa 4 (pemurnian 17 Nov 2026, diluluskan Cikgu Faris): Rekod Setiap Murid yang lebih mesra pengguna.
+   Menggantikan PKN.MuridGuru.buka dan PKN.MuridGuru.butiran (butiranLama tidak berubah). Tambahan:
+   - langkah arahan, kotak cari nama, penapis Data (Semua / Sebenar / Contoh) yang sama dengan Analisis Kelas;
+   - baris murid: bar kemajuan, bintang, aktif terakhir (Kod tidak lagi dipaparkan dalam senarai);
+   - butiran murid: 4 kotak utama, status lokasi sebagai senarai, butiran lanjut dan sejarah dalam bahagian lipat;
+   - "Padam kelas ini" dan "Padam murid ini": panel pengesahan dengan bilangan murid, rekod, sesi dan rakaman,
+     butang eksport dahulu (JSON dengan audio) dan perlu menaip PADAM. Hanya data murid itu dipadam (murid, sesi,
+     rekod jawapan, rakaman suara). Rekod lama v5.1.1 tanpa profil dan pangkalan lama pkn-rekod tidak disentuh. */
+(function(){
+  const R=PKN.Rekod,A=PKN.Aktiviti,B=PKN.Belajar,MG=PKN.MuridGuru,U=PKN.Urutan;
+  const pct=(a,b)=>b?Math.round(a/b*100):null;
+  const tarikh=d=>d?new Date(d).toLocaleString("ms-MY",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"–";
+  const tarikhPendek=d=>d?new Date(d).toLocaleString("ms-MY",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"–";
+  const relatif=d=>{const t=Date.parse(d);if(!t)return"–";const h0=new Date();h0.setHours(0,0,0,0);const h1=new Date(t);h1.setHours(0,0,0,0);
+    const hari=Math.round((h0-h1)/864e5),jam=new Date(t).toLocaleTimeString("ms-MY",{hour:"2-digit",minute:"2-digit"});
+    return hari<=0?"hari ini, "+jam:hari===1?"semalam":hari<7?hari+" hari lalu":new Date(t).toLocaleDateString("ms-MY",{day:"numeric",month:"short",year:"numeric"})};
+  const norm=t=>String(t||"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+  const jumBintang=m=>Object.values(m.bintang||{}).reduce((a,b)=>a+(+b||0),0);
+  const kemajuan=m=>(m.selesai||[]).filter(Boolean).length;
+  // Betul pada cubaan pertama: definisi sama dengan Analisis Kelas (jawapan, cubaan 1) bagi satu percubaan
+  const pertama=(rek,no)=>{const p=rek.filter(r=>r.jenis==="jawapan"&&(Number(r.percubaan)||1)===no&&Number(r.cubaan)===1),b=p.filter(r=>r.betul==="Ya").length;return{b,j:p.length,p:pct(b,p.length)}};
+  const SUMBER=[["semua","Semua"],["sebenar","Sebenar sahaja"],["contoh","Contoh sahaja"]];// pemurnian paparan: label pendek supaya tidak terpotong
+  const ikutSumber=(m,s)=>s==="semua"||(s==="contoh"?!!m.contoh:!m.contoh);
+  // ---------- Muat turun dan eksport sebahagian murid (JSON dengan audio; boleh diimport semula melalui Menu Guru) ----------
+  const muatTurun=(teks,nama)=>{try{const a=document.createElement("a"),u=URL.createObjectURL(new Blob([teks],{type:"application/json"}));a.href=u;a.download=nama;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),8000);return true}catch(e){return false}};
+  const keBase64=b=>new Promise(ok=>{try{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]||"");f.onerror=()=>ok("");f.readAsDataURL(b)}catch(e){ok("")}});
+  const eksportMurid=async(ids,label)=>{const set=new Set(ids);
+    const [murid,sesi,cubaan,rakaman]=await Promise.all(["murid","sesi","cubaan","rakaman"].map(s=>R.semuaDalam(s)));
+    const rk=[];for(const r of rakaman.filter(x=>set.has(x.idMurid))){const o={...r};delete o.audio;delete o.audioJenis;const b=R.audioBlob(r);if(b){o.audioBase64=await keBase64(b);o.mimeType=o.mimeType||b.type}rk.push(o)}
+    const o={format:"pkn-rekod",versiSkema:2,versiAplikasi:"5.2",dieksport:new Date().toISOString(),sertaAudio:true,skop:label,
+      murid:murid.filter(x=>set.has(x.idMurid)),sesi:sesi.filter(x=>set.has(x.idMurid)),cubaan:cubaan.filter(x=>set.has(x.idMurid)),rakaman:rk};
+    const t=JSON.stringify(o),ok=muatTurun(t,`rekod-${PKN.SuaraGuru._nama(label)}-${new Date().toISOString().slice(0,10)}.json`);
+    return{ok,murid:o.murid.length,rakaman:rk.length,mb:(t.length/1048576).toFixed(2)}};
+  // ---------- Padam data murid terpilih sahaja (rekod jawapan, sesi dan rakaman dahulu; profil murid terakhir) ----------
+  const padamMurid=async ids=>{const set=new Set(ids),h={murid:0,sesi:0,cubaan:0,rakaman:0};if(!R.db)return null;
+    for(const s of ["cubaan","sesi","rakaman"]){const k=[];for(const id of set){const x=(await R._op(s,"readonly",t=>t.index("idMurid").getAllKeys(id)))||[];k.push(...x)}
+      if(k.length&&!(await R._op(s,"readwrite",t=>{k.forEach(i=>t.delete(i))})))return null;h[s]=k.length}
+    if(!(await R._op("murid","readwrite",t=>{set.forEach(i=>t.delete(i))})))return null;h.murid=set.size;
+    set.forEach(i=>{delete R.mem.murid[i]});R.mem.cubaan=(R.mem.cubaan||[]).filter(r=>!set.has(r.idMurid));
+    if(PKN.SuaraGuru.penapis&&set.has(PKN.SuaraGuru.penapis.murid))PKN.SuaraGuru.penapis.murid="";
+    B._senarai=await R.senaraiMurid();return h};
+  // ---------- Panel pengesahan padam (kelas atau seorang murid) ----------
+  const sahkanPadam=async({tajuk,sasaran,label,M,D,kembali,selepas})=>{const E=A.esc,ids=new Set(M.map(m=>m.idMurid));
+    const nRek=D.rek.filter(r=>ids.has(r.idMurid)).length,nSes=D.sesi.filter(s=>ids.has(s.idMurid)).length,nRak=D.rak.filter(r=>ids.has(r.idMurid)).length,nC=M.filter(m=>m.contoh).length;
+    PKN.Sahkan({ikon:"🗑️",tajuk,ya:"Ya, padam",taip:"PADAM",kembali,
+      mesej:`Padam ${sasaran}? Data berikut akan dipadam:<br>• <b>${M.length}</b> murid${M.length>1?` (${M.length-nC} sebenar, ${nC} contoh)`:""}<br>• <b>${nRek}</b> rekod jawapan dan <b>${nSes}</b> sesi<br>• <b>${nRak}</b> rakaman suara
+        <br><b>Tindakan ini tidak boleh dibuat asal.</b> Eksport dahulu jika rekod ini mungkin diperlukan (fail boleh diimport semula melalui Menu Guru → Sandaran rekod).
+        <span class="tempat-eksport"></span>Murid lain dan rekod lama versi 5.1.1 tidak terjejas.`,
+      teruskan:async()=>{const aktif=await R.tetapan("muridAktif"),h=await padamMurid([...ids]);
+        if(!h){PKN.UI.toast("Data tidak dapat dipadam. Cuba sekali lagi.",3000);kembali();return}
+        PKN.UI.toast(`Dipadam: ${h.murid} murid, ${h.cubaan} rekod jawapan, ${h.sesi} sesi, ${h.rakaman} rakaman.`,3500);
+        if(aktif&&ids.has(aktif)){await R.tetapan("muridAktif","");try{sessionStorage.removeItem("pkn-percubaan-baharu")}catch(e){}
+          PKN.UI.toast("Murid yang sedang bermain telah dipadam. Halaman dimuat semula…",2500);setTimeout(()=>location.reload(),1200);return}
+        selepas()}});
+    const p=document.querySelector("#modalPapan .arahan");if(!p)return;p.closest("div").classList.add("panel-padam");
+    const te=p.querySelector(".tempat-eksport"),mk=document.createElement("div");mk.className="maklum";
+    te.append(A.butang(`⬇ Eksport ${label} dahulu (JSON)`,"kayu kecil",async()=>{mk.className="maklum";mk.textContent="Sedang menyediakan fail…";
+      const h=await eksportMurid([...ids],label);mk.className=h.ok?"maklum betul":"maklum salah";
+      mk.textContent=h.ok?`✔ Fail dimuat turun: ${h.murid} murid, ${h.rakaman} rakaman (dengan audio), ${h.mb} MB.`:"Fail tidak dapat dimuat turun dalam pelayar ini."}),mk)};
+  // ---------- Senarai murid ----------
+  Object.assign(MG,{sumber:"semua",cari:"",
+    async buka(){
+      const E=A.esc,D=await this.muat(),semua=D.murid,ikut=semua.filter(m=>ikutSumber(m,this.sumber));
+      const kls=[...new Set(ikut.map(m=>m.kelas||""))].sort((a,b)=>a.localeCompare(b,"ms",{numeric:true}));
+      if(this.kelas&&!kls.includes(this.kelas))this.kelas="";
+      const L=ikut.filter(m=>!this.kelas||(m.kelas||"")===this.kelas).sort(B._banding);
+      const labelKelas=k=>{const mk=ikut.filter(m=>(m.kelas||"")===k);return E(k||"Tiada kelas")+(mk.length&&mk.every(m=>m.contoh)?" (CONTOH)":"")};
+      const lama={};if(this.sumber!=="contoh")D.rek.filter(r=>!r.idMurid).forEach(r=>{const k=r.nama+"|"+r.kelas;(lama[k]=lama[k]||[]).push(r)});
+      const kLama=Object.keys(lama).filter(k=>!this.kelas||lama[k][0].kelas===this.kelas);
+      const baris=m=>{const n=kemajuan(m);
+        return`<button type="button" class="baris-murid baris2" data-id="${E(m.idMurid)}" data-cari="${E(norm(m.nama))}"><b>${E(m.nama||"Penjelajah")}${m.contoh?' <span class="lencana-contoh">CONTOH</span>':""}</b>
+          <small>${this.kelas?"":E(m.kelas||"Tiada kelas")+" · "}Aktif: ${relatif(m.terakhirAktif)}</small>
+          <span class="kanan"><span class="bar-mini" aria-hidden="true"><i style="width:${Math.round(n/6*100)}%"></i></span><span class="angka">${n}/6 · ⭐ ${jumBintang(m)}</span></span></button>`};
+      const isi=document.createElement("div");isi.className="suara-guru murid-guru";
+      isi.innerHTML=`<ol class="langkah-guru"><li><b>1</b>Pilih kelas</li><li><b>2</b>Cari atau ketik nama</li><li><b>3</b>Lihat kemajuan murid</li></ol>
+        <div class="penapis"><label>Kelas<select id="pKelasM"><option value="">Semua kelas</option>${kls.map(k=>`<option value="${E(k)}"${k===this.kelas?" selected":""}>${labelKelas(k)}</option>`).join("")}</select></label>
+          <label>Data<select id="pSumberM">${SUMBER.map(([v,t])=>`<option value="${v}"${v===this.sumber?" selected":""}>${t}</option>`).join("")}</select></label>
+          <label>Cari nama<input type="search" id="pCariM" class="cari-murid" placeholder="🔍 Taip nama murid" autocomplete="off" spellcheck="false" value="${E(this.cari)}"></label></div>
+        <div class="baris-kiraan"><span class="kiraan"></span><span class="tempat-padam"></span></div>
+        <div class="senarai-murid">${L.map(baris).join("")}<p class="arahan tiada-padan" hidden></p></div>
+        ${kLama.length?`<details class="lipat-guru lama"><summary>🗂️ Rekod lama tanpa profil (${kLama.length})</summary><p class="nota-kecil">Rekod versi 5.1.1 yang tidak dapat dipadankan dengan mana-mana murid. Rekod ini tidak dipadam oleh butang padam kelas atau murid.</p><div class="senarai-murid">${kLama.map(k=>{const r=lama[k][0];
+          return`<button type="button" class="baris-murid" data-lama="${E(k)}" data-cari="${E(norm(r.nama))}"><b>${E(r.nama||"Tanpa nama")}</b><small>${E(r.kelas||"Tiada kelas")} · ${lama[k].length} rekod</small><span class="kemajuan-baris">${new Set(lama[k].filter(x=>x.jenis==="selesai").map(x=>x.lokasi)).size}/6</span></button>`}).join("")}</div></details>`:""}`;
+      const kiraan=isi.querySelector(".kiraan"),tiada=isi.querySelector(".tiada-padan"),cari=isi.querySelector("#pCariM");
+      const tapis=()=>{const q=norm(cari.value);this.cari=cari.value;let n=0,nc=0;
+        isi.querySelectorAll(".senarai-murid:not(.lama) > .baris-murid[data-id]").forEach(b=>{const ok=!q||b.dataset.cari.includes(q);b.hidden=!ok;if(ok){n++;if(b.querySelector(".lencana-contoh"))nc++}});
+        isi.querySelectorAll(".baris-murid[data-lama]").forEach(b=>{b.hidden=!!q&&!b.dataset.cari.includes(q)});
+        kiraan.textContent=`Memaparkan ${n} daripada ${semua.length} murid dalam peranti ini${nc?` (${nc} CONTOH)`:""}.`;
+        tiada.hidden=n>0;tiada.textContent=L.length?`Tiada nama sepadan dengan “${cari.value.trim()}”.`:"Tiada murid bagi pilihan ini."};
+      tapis();cari.oninput=tapis;
+      isi.querySelector("#pKelasM").onchange=e=>{this.kelas=e.target.value;this.buka()};
+      isi.querySelector("#pSumberM").onchange=e=>{this.sumber=e.target.value;this.buka()};
+      isi.querySelectorAll(".baris-murid[data-id]").forEach(b=>b.onclick=()=>this.butiran(b.dataset.id));
+      isi.querySelectorAll(".baris-murid[data-lama]").forEach(b=>b.onclick=()=>this.butiranLama(b.dataset.lama,lama[b.dataset.lama]));
+      if(this.kelas&&L.length){const lbl=this.sumber==="semua"?"":this.sumber==="contoh"?" (contoh sahaja)":" (sebenar sahaja)";
+        isi.querySelector(".tempat-padam").append(A.butang("🗑️ Padam kelas ini","bahaya kecil",()=>sahkanPadam({tajuk:"Padam Kelas",label:`kelas ${this.kelas}`,
+          sasaran:`<b>semua murid kelas ${E(this.kelas)}</b>${lbl}`,M:L,D,kembali:()=>this.buka(),selepas:()=>this.buka()})))}
+      A.bukaPapan({ikon:"👤",tajuk:"Rekod Setiap Murid",sub:"Untuk guru sahaja",isi,kaki:[A.butang("◀ Menu Guru","kayu",()=>PKN.MenuGuru.buka()),A.butang("✔ Tutup","emas",()=>A.tutup())]});
+      document.getElementById("modalPapan").classList.add("lebar")},
+    // ---------- Butiran seorang murid ----------
+    async butiran(id){
+      const E=A.esc,D=await this.muat(),m=D.murid.find(x=>x.idMurid===id);if(!m){this.buka();return}
+      const rek=D.rek.filter(r=>r.idMurid===id),ses=D.sesi.filter(s=>s.idMurid===id).sort((a,b)=>String(b.mula).localeCompare(String(a.mula))),rak=D.rak.filter(r=>r.idMurid===id);
+      const no=m.percubaan||1,p1=pertama(rek,1),pk=no>1?pertama(rek,no):null,n=kemajuan(m),bin=jumBintang(m);
+      const minit=Math.round(ses.reduce((a,s)=>a+Math.max(0,(Date.parse(s.akhir)||0)-(Date.parse(s.mula)||0)),0)/6e4);
+      const s0=ses[0],m0=s0?Math.round(Math.max(0,(Date.parse(s0.akhir)||0)-(Date.parse(s0.mula)||0))/6e4):0;
+      const lenc=PKN.Lencana.SENARAI.filter(L=>m.lencana&&m.lencana[L.id]),kad=PKN.BegKata.dapat(m).length,dinilai=rak.filter(r=>r.penilaian);
+      const beza=pk&&pk.p!==null&&p1.p!==null?pk.p-p1.p:null;
+      const kini=pk&&pk.j?`<small class="kini">Terkini (percubaan ${no}): ${pk.p}%${beza===null?"":beza>0?` (naik ${beza}%)`:beza<0?` (turun ${-beza}%)`:" (sama)"}</small>`:"";
+      const ST={selesai:["✓","Selesai"],sedang:["▶","Sedang"],belum:["–","Belum"]};
+      const isi=document.createElement("div");isi.className="suara-guru murid-guru";
+      isi.innerHTML=`<div class="kepala-murid"><b>${E(m.nama||"Penjelajah")}</b>${m.contoh?'<span class="lencana-contoh">CONTOH</span>':""}
+          <small>${E(m.kelas||"Tiada kelas")} · ${m.watak==="LP"?"Penjelajah Perempuan":"Penjelajah Lelaki"} · Aktif: ${relatif(m.terakhirAktif)}</small>
+          <small class="halus">Kod ${E(m.kodPaparan||"–")} · Didaftarkan ${tarikh(m.dicipta)}${m.asal==="v5.1.1"?" · dipindahkan daripada versi 5.1.1":""}</small></div>
+        <div class="ringkas-murid">
+          <div><b>${n}/6</b><span class="bar-mini" aria-hidden="true"><i style="width:${Math.round(n/6*100)}%"></i></span><small>lokasi selesai${no>1?` (percubaan ${no})`:""}</small></div>
+          <div><b>⭐ ${bin}</b><small>bintang daripada 18${no>1?` (percubaan ${no})`:""}</small></div>
+          <div><b>${p1.p===null?"–":p1.p+"%"}</b><small>betul pada cubaan pertama${no>1?" (percubaan 1)":""} · ${p1.b}/${p1.j} soalan</small>${kini}</div>
+          <div><b>${s0?tarikhPendek(s0.mula):"–"}</b><small>sesi terakhir${s0?` · ${m0<1?"kurang 1":"kira-kira "+m0} minit`:""}</small></div></div>
+        <h3 class="kumpulan">🧭 Status lokasi${no>1?` (percubaan ${no})`:""}</h3>
+        <ol class="status2">${U.URUT.map(k=>{const s=R.statusLokasi(m,k),t=ST[s.status]||ST.belum,b=m.bintang&&m.bintang[k];
+          return`<li class="${s.status}"><span class="tanda2">${t[0]}</span><b>${U.no(k)} · ${E(U.nama(k))}</b><span>${b?"⭐".repeat(b):""}</span>
+            <small>${t[1]}${s.tamat?` · ${tarikh(s.tamat)}`:s.mula?` · mula ${tarikh(s.mula)}`:""}</small></li>`}).join("")}</ol>
+        <details class="lipat-guru"><summary>➕ Butiran lanjut</summary>
+          <div class="ringkas-murid">
+            <div><b>${no}</b><small>percubaan</small></div>
+            <div><b>${ses.length}</b><small>sesi · kira-kira ${minit} minit</small></div>
+            <div><b>${lenc.length}/${PKN.Lencana.SENARAI.length}</b><small>lencana</small></div>
+            <div><b>${kad}/${PKN.BegKata.jumlah()}</b><small>kad Beg Kata</small></div>
+            <div><b>${rak.length}</b><small>rakaman suara (${dinilai.length} dinilai)</small></div></div>
+          <h3 class="kumpulan">🏅 Lencana</h3>${lenc.length?`<ul class="senarai-ringkas">${lenc.map(L=>`<li>${L.ikon} ${E(L.nama)} · ${tarikh(m.lencana[L.id])}</li>`).join("")}</ul>`:`<p class="nota-kecil">Belum ada lencana.</p>`}</details>
+        <details class="lipat-guru"><summary>🔁 Sejarah percubaan dan sijil</summary>
+          ${(m.sejarah||[]).length?`<ul class="senarai-ringkas">${m.sejarah.map(h=>`<li>Percubaan ${h.percubaan}: ${Object.keys(h.bintang||{}).length}/6 lokasi, ⭐ ${h.jumlahBintang??0} · ${tarikh(h.tamat)}${h.setSemula?" · set semula oleh guru":""}</li>`).join("")}</ul>`:`<p class="nota-kecil">Tiada percubaan terdahulu.</p>`}
+          ${m.sijil||(m.sijilLama||[]).length?`<h3 class="kumpulan">📜 Sijil</h3><ul class="senarai-ringkas">${[...(m.sijilLama||[]),...(m.sijil?[m.sijil]:[])].map(s=>`<li>Percubaan ${s.percubaan}: ⭐ ${s.bintang} · ${tarikh(s.tarikh)}</li>`).join("")}</ul>`:`<p class="nota-kecil">Belum ada sijil.</p>`}</details>
+        <div class="zon-bahaya"><p>Padam semua rekod dan rakaman suara murid ini daripada peranti ini.</p></div>`;
+      isi.querySelector(".zon-bahaya").append(A.butang("🗑️ Padam murid ini","bahaya kecil",()=>sahkanPadam({tajuk:"Padam Murid",label:m.nama||"murid",
+        sasaran:`<b>${E(m.nama||"Penjelajah")}</b> (${E(m.kelas||"Tiada kelas")})`,M:[m],D,kembali:()=>this.butiran(id),selepas:()=>this.buka()})));
+      const kaki=[A.butang("◀ Senarai murid","kayu",()=>this.buka())];
+      if(rak.length)kaki.push(A.butang(`🎙️ Rakaman (${rak.length})`,"emas kecil",()=>{PKN.SuaraGuru.penapis={murid:id,kelas:"",lokasi:"",nilai:""};PKN.SuaraGuru.buka()}));
+      A.bukaPapan({ikon:"👤",tajuk:"Rekod Murid",sub:m.nama||"Penjelajah",isi,kaki});document.getElementById("modalPapan").classList.add("lebar")}
+  });
+})();
+</script>
+<style>
+/* v5.2 Fasa 4 (pemurnian paparan 17 Nov 2026): isu paparan sahaja, ditemui oleh ujian/audit-paparan.js.
+   1. Nota Pembelajaran: nama khas yang panjang (contoh "Sekolah Kebangsaan Taman Universiti") terkeluar dari kad lajur.
+      Cip dalam kad kini selebar kad (lebar seragam) dan teks panjang turun baris. */
+.kad-contoh{min-width:0}
+.kad-contoh .chip{display:block;max-width:100%;box-sizing:border-box;margin:4px 0;white-space:normal;overflow-wrap:break-word}
+/* 2. Sebut: baris butang (◀ 🔊 Dengar ▶) melekat pada butang "Rakam sebutan saya" di bawahnya (jarak 0 px). */
+.kad-sebut~.baris-butang+.rakam{margin-top:10px}
+/* 3. Babak Penutup (telefon melintang, contoh 667×375): teks "Teruskan Mengembara" dan "Baca Nota Pembelajaran" terkeluar
+      dari butang kerana tidak boleh turun baris. Bagi lebar 601–860 px, teks kini turun baris di dalam butang. */
+@media (min-width:601px) and (max-width:860px){.bp-pilih{white-space:normal;line-height:1.15;text-align:center}}
+/* 4. Analisis Kelas (telefon 390×844): pilihan Data "Semua (sebenar dan contoh)" terpotong apabila Kelas dan Data
+      berada sebaris. Kini kedua-dua pilihan bertindan apabila ruang kurang daripada 230 px setiap satu; teks tidak berubah. */
+.analisis .penapis{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+/* 5. Mari Bertutur (telefon 360×640): "Rakam suara saya" dan "Langkau rakaman" turun ke dua baris dan melekat (jarak 0 px).
+      Jarak menegak 8 px antara baris; susunan mendatar tidak berubah. */
+.kad-lisan .rakam>.btn{margin-top:4px;margin-bottom:4px}
+/* 6. Rekod Setiap Murid: baris "Rekod lama tanpa profil" (lebar 100% + padding + sempadan) terkeluar 34 px dari bahagian lipat. */
+.murid-guru .baris-murid{box-sizing:border-box}
+/* 7. Panel misi telefon (360×640): teks "Misi semasa" tidak boleh mengecil, jadi anak panah lipat ▾ tertolak keluar 11 px
+      dan terpotong. Tajuk kini boleh mengecil (… jika perlu); anak panah kekal di dalam panel. Keadaan "tamat" tidak berubah. */
+html body.telefon #panelMisi:not(.tamat) .tajuk-misi{min-width:0;overflow:hidden}
+html body.telefon #panelMisi:not(.tamat) .tajuk-misi small{display:block;overflow:hidden;text-overflow:ellipsis}
+html body.telefon #panelMisi .kepala-misi .lipat{flex:none}
+@media (max-width:380px){html body.telefon #panelMisi:not(.tamat) .kepala-misi{gap:4px;padding:4px 6px!important}}
+</style>
 </body>
 </html>
