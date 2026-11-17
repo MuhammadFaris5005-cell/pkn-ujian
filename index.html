@@ -776,7 +776,7 @@ body.bulat-baris:not(.telefon) #butangBulat{flex-direction:row!important}
 
 <button id="btnUji" class="ikon-bulat" aria-label="Menu ujian guru" title="Menu ujian guru">⚙️</button>
 <section id="panelUji" class="papan" hidden aria-label="Menu ujian guru">
-  <header id="panelKepala"><span aria-hidden="true">🧪</span><div><h2>Menu ujian guru</h2><small>Pengembaraan Kata Nama · v5.1.2 (DALAM SEMAKAN)</small></div><button id="btnTutupUji" class="tutup" aria-label="Tutup menu ujian">✕</button></header>
+  <header id="panelKepala"><span aria-hidden="true">🧪</span><div><h2>Menu ujian guru</h2><small>Pengembaraan Kata Nama · v5.2 (DALAM SEMAKAN)</small></div><button id="btnTutupUji" class="tutup" aria-label="Tutup menu ujian">✕</button></header>
   <div class="isi">
     <ul>
       <li class="papar-komputer"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> atau anak panah, atau klik di tanah; <kbd>M</kbd> untuk peta besar</li>
@@ -3186,19 +3186,123 @@ PKN.Aktiviti.asingkanBakul=function(selesai,kataBaru){
 if("speechSynthesis" in window){PKN.Aktiviti.cariSuara();speechSynthesis.onvoiceschanged=()=>PKN.Aktiviti.cariSuara()}
 </script>
 <script>
-/* FAIL MASA DEPAN: js/core/storage.js (IndexedDB: profil murid, rekod cubaan, rakaman suara pilihan) */
+/* FAIL MASA DEPAN: js/core/storage.js (IndexedDB: profil murid, rekod cubaan, rakaman suara pilihan)
+   v5.2 Fasa 1: pangkalan baharu "pkn-rekod-2" (berbilang murid, sesi, rekod berID). Pangkalan lama "pkn-rekod" (v5.1.1)
+   hanya DIBACA untuk migrasi dan tidak pernah ditulis, supaya v5.1.1 kekal berfungsi pada peranti dan domain yang sama.
+   API awam sedia ada dikekalkan: buka, muatProfil, simpanProfil, log, semua, simpanSuara, padamSemua.
+   Rujukan: dokumentasi/REKA-BENTUK-SISTEM-REKOD-v5.2.md */
 PKN.Rekod={
-  db:null,mem:{profil:null,cubaan:[]},
-  buka(){return new Promise(ok=>{try{const r=indexedDB.open("pkn-rekod",1);
-    r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("profil",{keyPath:"id"});d.createObjectStore("cubaan",{autoIncrement:true});d.createObjectStore("suara",{autoIncrement:true})};
-    r.onsuccess=()=>{this.db=r.result;ok(true)};r.onerror=()=>ok(false)}catch(e){ok(false)}})},
-  _op(store,mode,fn){return new Promise(ok=>{if(!this.db){ok(null);return}try{const tx=this.db.transaction(store,mode),s=tx.objectStore(store),q=fn(s);tx.oncomplete=()=>ok(q?q.result:true);tx.onerror=()=>ok(null)}catch(e){ok(null)}})},
-  async muatProfil(){if(!this.db)return this.mem.profil;const r=await this._op("profil","readonly",s=>s.get("semasa"));return r&&r.selesai?r:null},
-  simpanProfil(p){this.mem.profil=p;return this._op("profil","readwrite",s=>s.put(p))},
-  log(e){const P=PKN.Belajar.profil||{};const r={masa:new Date().toISOString(),nama:P.nama||"",kelas:P.kelas||"",...e};this.mem.cubaan.push(r);return this._op("cubaan","readwrite",s=>s.add(r))},
-  async semua(){if(!this.db)return this.mem.cubaan;return (await this._op("cubaan","readonly",s=>s.getAll()))||[]},
-  simpanSuara(blob,meta){return this._op("suara","readwrite",s=>s.add({blob,...meta,masa:new Date().toISOString()}))},
-  padamSemua(){this.mem.cubaan=[];return Promise.all([this._op("cubaan","readwrite",s=>s.clear()),this._op("suara","readwrite",s=>s.clear())])}
+  NAMA_DB:"pkn-rekod-2",NAMA_DB_LAMA:"pkn-rekod",SESI_TAMAT_MS:30*60*1000,
+  db:null,storanGagal:false,sesi:null,mem:{profil:null,cubaan:[],murid:{},peranti:{}},
+  // ---------- ID (crypto.getRandomValues tersedia di https, localhost dan file://) ----------
+  _rawak(n){const a=new Uint8Array(n);try{crypto.getRandomValues(a)}catch(e){for(let i=0;i<n;i++)a[i]=Math.floor(Math.random()*256)}return a},
+  idRawak(awalan){return awalan+"-"+Date.now().toString(36)+"-"+[...this._rawak(6)].map(x=>(x%36).toString(36)).join("")},
+  kodPaparan(){const H="23456789ABCDEFGHJKMNPQRSTUVWXYZ";return[...this._rawak(4)].map(x=>H[x%H.length]).join("")},
+  _norm(t){return String(t||"").trim().replace(/\s+/g," ").toLowerCase()},
+  samaNama(a,b){return!!a&&!!b&&this._norm(a.nama)===this._norm(b.nama)&&this._norm(a.kelas)===this._norm(b.kelas)},
+  // ---------- Buka pangkalan, migrasi v5.1.1, storan kekal ----------
+  _bukaDb(){return new Promise(ok=>{try{const r=indexedDB.open(this.NAMA_DB,1);
+    r.onupgradeneeded=()=>{const d=r.result;
+      d.createObjectStore("peranti",{keyPath:"kunci"});
+      const m=d.createObjectStore("murid",{keyPath:"idMurid"});["kelas","contoh","terakhirAktif"].forEach(i=>m.createIndex(i,i));
+      const se=d.createObjectStore("sesi",{keyPath:"idSesi"});["idMurid","contoh"].forEach(i=>se.createIndex(i,i));
+      const c=d.createObjectStore("cubaan",{keyPath:"idRekod"});["idMurid","jenis","lokasi","contoh","idSoalan"].forEach(i=>c.createIndex(i,i));c.createIndex("muridPercubaan",["idMurid","percubaan"]);
+      const k=d.createObjectStore("rakaman",{keyPath:"idRakaman"});["idMurid","kelas","lokasi","masa","penilaian","contoh"].forEach(i=>k.createIndex(i,i))};
+    r.onsuccess=()=>{this.db=r.result;this.db.onversionchange=()=>{try{this.db.close()}catch(e){}};ok(true)};
+    r.onerror=()=>ok(false);r.onblocked=()=>ok(false)}catch(e){ok(false)}})},
+  async buka(){
+    const ok=await this._bukaDb();this.storanGagal=!ok;
+    if(!ok)return false;
+    if(!(await this.tetapan("versiSkema")))await this.tetapan("versiSkema",2);
+    if(!(await this.tetapan("migrasiV1"))){const h=await this.importV1();await this.tetapan("migrasiV1",{tarikh:new Date().toISOString(),versi:"5.1.1",...h})}
+    try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}
+    return true},
+  _op(store,mode,fn){return new Promise(ok=>{if(!this.db){ok(null);return}try{const tx=this.db.transaction(store,mode),s=tx.objectStore(store),q=fn(s);tx.oncomplete=()=>ok(q&&"result"in q?q.result:true);tx.onerror=()=>ok(null);tx.onabort=()=>ok(null)}catch(e){ok(null)}})},
+  // ---------- Tetapan peranti ----------
+  async tetapan(kunci,nilai){
+    if(nilai===undefined){if(!this.db)return this.mem.peranti[kunci];const r=await this._op("peranti","readonly",s=>s.get(kunci));return r?r.nilai:undefined}
+    this.mem.peranti[kunci]=nilai;return this._op("peranti","readwrite",s=>s.put({kunci,nilai}))},
+  // ---------- Murid ----------
+  binaMurid(o={}){const t=new Date().toISOString();
+    return{idMurid:this.idRawak("m"),kodPaparan:this.kodPaparan(),nama:"",kelas:"",watak:"L",dicipta:t,terakhirAktif:t,asal:"v5.2",contoh:0,
+      percubaan:1,selesai:[false,false,false,false,false,false],bintang:{},nota:{},notaTab:{},lisan:{},petiDibuka:false,lencana:{},sejarah:[],...o}},
+  async senaraiMurid(){if(!this.db)return Object.values(this.mem.murid);return(await this._op("murid","readonly",s=>s.getAll()))||[]},
+  async ambilMurid(id){if(!id)return null;if(!this.db)return this.mem.murid[id]||null;return(await this._op("murid","readonly",s=>s.get(id)))||null},
+  async muridBaharu(o){const m=this.binaMurid(o);this.mem.murid[m.idMurid]=m;await this._op("murid","readwrite",s=>s.put(m));await this.pilihMurid(m.idMurid);return m},
+  pilihMurid(id){return this.tetapan("muridAktif",id)},
+  async muatProfil(){
+    if(!this.db)return this.mem.profil;
+    const r=await this.ambilMurid(await this.tetapan("muridAktif"));return r&&r.selesai?r:null},
+  simpanProfil(p){if(!p)return Promise.resolve(null);p.terakhirAktif=new Date().toISOString();this.mem.profil=p;
+    if(p.idMurid)this.mem.murid[p.idMurid]=p;if(!p.idMurid)return Promise.resolve(null);
+    return this._op("murid","readwrite",s=>s.put(p))},
+  // ---------- Sesi pembelajaran ----------
+  sesiId(){const P=PKN.Belajar.profil;if(!P||!P.idMurid)return"";const S=this.sesi,kini=Date.now(),no=P.percubaan||1;
+    if(!S||S.idMurid!==P.idMurid||S.percubaan!==no||kini-Date.parse(S.akhir)>this.SESI_TAMAT_MS){
+      const t=new Date(kini).toISOString();
+      this.sesi={idSesi:this.idRawak("s"),idMurid:P.idMurid,percubaan:no,mula:t,akhir:t,
+        jenisPeranti:document.body.classList.contains("telefon")?"telefon":"komputer",saizSkrin:`${innerWidth}x${innerHeight}`,bilRekod:0,contoh:P.contoh?1:0};
+      this._simpanSesi()}
+    return this.sesi.idSesi},
+  _simpanSesi(){const S=this.sesi;if(S)return this._op("sesi","readwrite",s=>s.put({...S}))},
+  // ---------- Rekod jawapan ----------
+  log(e){const P=PKN.Belajar.profil||{};const idSesi=this.sesiId();
+    const r={masa:new Date().toISOString(),nama:P.nama||"",kelas:P.kelas||"",...e,idRekod:this.idRawak("r"),idMurid:P.idMurid||"",idSesi,lama:0,contoh:P.contoh?1:0};
+    this.mem.cubaan.push(r);
+    if(this.sesi&&idSesi){this.sesi.akhir=r.masa;this.sesi.bilRekod++;this._simpanSesi()}
+    return this._op("cubaan","readwrite",s=>s.add(r))},
+  async semua(){if(!this.db)return this.mem.cubaan;const R=(await this._op("cubaan","readonly",s=>s.getAll()))||[];return R.sort((a,b)=>String(a.masa).localeCompare(String(b.masa)))},
+  // ---------- Rekod Suara Murid (Fasa 2) ----------
+  // Simpan satu rakaman yang DIHANTAR. Pulangkan idRakaman, atau "" jika gagal. Jika peranti tidak dapat menyimpan Blob,
+  // audio disimpan sebagai ArrayBuffer (mimeType disimpan berasingan).
+  async simpanSuara(blob,meta){const P=PKN.Belajar.profil||{};
+    const r={idRakaman:this.idRawak("a"),idMurid:P.idMurid||"",idSesi:this.sesiId(),percubaan:P.percubaan||1,tempohMs:0,...meta,masa:new Date().toISOString(),
+      mimeType:(blob&&blob.type)||"",saizBait:(blob&&blob.size)||0,audio:blob,penilaian:null,dinilaiPada:null,contoh:P.contoh?1:0};
+    if(!this.db)return"";
+    let id=await this._op("rakaman","readwrite",s=>s.add(r));
+    if(!id&&blob&&blob.arrayBuffer){try{r.audio=await blob.arrayBuffer();r.audioJenis="arraybuffer";id=await this._op("rakaman","readwrite",s=>s.add(r))}catch(e){}}
+    return id||""},
+  // Tetapan peranti "Simpan rakaman suara murid". Nilai awal (jika belum ditetapkan) ikut tetapan murid aktif.
+  async bolehSimpanSuara(){let v=await this.tetapan("simpanSuara");
+    if(v===undefined){const P=PKN.Belajar.profil;v=P&&P.simpanSuara?1:0;await this.tetapan("simpanSuara",v)}return!!v},
+  setSimpanSuara(on){return this.tetapan("simpanSuara",on?1:0)},
+  async senaraiRakaman(){if(!this.db)return[];const R=(await this._op("rakaman","readonly",s=>s.getAll()))||[];return R.sort((a,b)=>String(b.masa).localeCompare(String(a.masa)))},
+  async ambilRakaman(id){if(!this.db)return null;return(await this._op("rakaman","readonly",s=>s.get(id)))||null},
+  async nilaiRakaman(id,penilaian){const r=await this.ambilRakaman(id);if(!r)return null;r.penilaian=penilaian||null;r.dinilaiPada=penilaian?new Date().toISOString():null;
+    await this._op("rakaman","readwrite",s=>s.put(r));return r},
+  padamRakaman(id){return this._op("rakaman","readwrite",s=>s.delete(id))},
+  padamSemuaRakaman(){return this._op("rakaman","readwrite",s=>s.clear())},
+  audioBlob(r){if(!r||!r.audio)return null;return r.audio instanceof Blob?r.audio:new Blob([r.audio],{type:r.mimeType||"audio/webm"})},
+  // Rakaman lama v5.1.1 (store "suara" dalam pkn-rekod): BACA SAHAJA
+  async rakamanLama(){const d=await this._bukaV1();if(!d)return[];if(!d.objectStoreNames.contains("suara")){d.close();return[]}
+    const S=await this._bacaV1(d,"suara");try{d.close()}catch(e){}
+    return S.v.map((x,i)=>x&&{idRakaman:"v1-"+S.k[i],lama:1,nama:x.nama||"",kelas:x.kelas||"",lokasi:x.lokasi||"",soalan:String(x.soalan||"").replace(/<[^>]+>/g,""),masa:x.masa||"",
+      mimeType:(x.blob&&x.blob.type)||"",saizBait:(x.blob&&x.blob.size)||0,audio:x.blob,penilaian:null}).filter(Boolean).sort((a,b)=>String(b.masa).localeCompare(String(a.masa)))},
+  // Padam rekod jawapan dan rakaman dalam pangkalan v5.2 sahaja (profil murid dan pangkalan v5.1.1 tidak disentuh)
+  padamSemua(){this.mem.cubaan=[];return Promise.all([this._op("cubaan","readwrite",s=>s.clear()),this._op("rakaman","readwrite",s=>s.clear())])},
+  // ---------- Migrasi v5.1.1 (baca sahaja) ----------
+  // Buka "pkn-rekod" TANPA menciptanya: jika belum wujud, transaksi naik taraf dibatalkan supaya tiada pangkalan kosong
+  // dicipta (pangkalan kosong akan menyebabkan simpanan v5.1.1 gagal secara senyap).
+  _bukaV1(){return new Promise(ok=>{try{let baru=false;const r=indexedDB.open(this.NAMA_DB_LAMA);
+    r.onupgradeneeded=ev=>{baru=true;try{ev.target.transaction.abort()}catch(x){}};
+    r.onsuccess=()=>{const d=r.result;if(baru||!d.objectStoreNames.contains("profil")||!d.objectStoreNames.contains("cubaan")){d.close();ok(null);return}ok(d)};
+    r.onerror=ev=>{try{ev.preventDefault()}catch(x){}ok(null)};r.onblocked=()=>ok(null)}catch(e){ok(null)}})},
+  _bacaV1(d,store){return new Promise(ok=>{try{const tx=d.transaction(store,"readonly"),s=tx.objectStore(store),q=s.getAll(),qk=s.getAllKeys();
+    tx.oncomplete=()=>ok({v:q.result||[],k:qk.result||[]});tx.onerror=()=>ok({v:[],k:[]})}catch(e){ok({v:[],k:[]})}})},
+  async importV1(){
+    const h={ada:false,murid:0,rekod:0,langkau:0};if(!this.db)return h;
+    const d=await this._bukaV1();if(!d)return h;h.ada=true;
+    const P=await this._bacaV1(d,"profil"),C=await this._bacaV1(d,"cubaan");try{d.close()}catch(e){}
+    const p=P.v.find(x=>x&&x.id==="semasa"&&x.selesai);let idM="";
+    if(p){const sedia=(await this.senaraiMurid()).find(m=>m.asal==="v5.1.1"&&this.samaNama(m,p));
+      if(sedia)idM=sedia.idMurid;
+      else{const o={...p};delete o.id;const m=this.binaMurid({...o,asal:"v5.1.1"});await this._op("murid","readwrite",s=>s.put(m));idM=m.idMurid;h.murid=1;
+        if(!(await this.tetapan("muridAktif")))await this.pilihMurid(idM)}}
+    const ada=new Set((await this._op("cubaan","readonly",s=>s.getAllKeys()))||[]),baru=[];
+    C.v.forEach((r,i)=>{if(!r)return;const id=`v1-${C.k[i]}-${r.masa||""}`;if(ada.has(id)){h.langkau++;return}
+      baru.push({...r,idRekod:id,idMurid:p&&idM&&this.samaNama(r,p)?idM:"",idSesi:"",lama:1,contoh:0})});
+    if(baru.length)await this._op("cubaan","readwrite",s=>{baru.forEach(r=>s.put(r))});
+    h.rekod=baru.length;return h}
 };
 
 /* FAIL MASA DEPAN: js/activities/content.js
@@ -3360,22 +3464,31 @@ PKN.Belajar={
   async mulaRakam(){const st=await navigator.mediaDevices.getUserMedia({audio:true});const mr=new MediaRecorder(st);const ch=[];mr.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};mr.start();
     return{henti:()=>new Promise(ok=>{mr.onstop=()=>{st.getTracks().forEach(t=>t.stop());ok(new Blob(ch,{type:mr.mimeType||"audio/webm"}))};mr.stop()})}},
   lisan({k,tajuk,soalan,contoh,dengar,selesai,label}){
-    const A=PKN.Aktiviti,isi=document.createElement("div"),boleh=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);let dirakam=false;
+    // v5.2 Fasa 2: rupa dan langkah murid tidak berubah. Rakaman hanya disimpan apabila murid menghantar ("Teruskan ▶"),
+    // bukan setiap kali berhenti merakam. "Langkau rakaman" direkod sebagai "dilangkau".
+    const A=PKN.Aktiviti,isi=document.createElement("div"),boleh=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
+    let terakhir=null,dihantar=false;
     A.bukaPapan({ikon:"🎙️",tajuk:tajuk||"Mari Bertutur",sub:PKN.KANDUNGAN.lokasi[k],isi});
-    const siap=()=>{PKN.Rekod.log({jenis:"lisan",lokasi:PKN.KANDUNGAN.lokasi[k],aktiviti:"Bertutur",soalan,jawapan:dirakam?"dirakam":"disebut tanpa rakaman",betul:"-",cubaan:1});A.henti();selesai()};
+    const lokasi=PKN.KANDUNGAN.lokasi[k],soalanTeks=String(soalan||"").replace(/<[^>]+>/g,"");
+    const siap=async status=>{if(dihantar)return;dihantar=true;let idRakaman="",catatan="";
+      if(status==="dirakam"&&terakhir&&await PKN.Rekod.bolehSimpanSuara()){
+        idRakaman=await PKN.Rekod.simpanSuara(terakhir.blob,{nama:this.profil.nama,kelas:this.profil.kelas,lokasi,soalan:soalanTeks,tempohMs:terakhir.tempohMs});
+        if(!idRakaman)catatan="rakaman gagal disimpan"}
+      const jawapan={dirakam:"dirakam","tanpa rakaman":"disebut tanpa rakaman",dilangkau:"dilangkau"}[status];
+      PKN.Rekod.log({jenis:"lisan",lokasi,aktiviti:"Bertutur",soalan,jawapan,betul:"-",cubaan:1,statusLisan:status,idRakaman,...(catatan?{catatan}:{})});A.henti();selesai()};
     const lukis=()=>{isi.innerHTML=`<div class="kad-lisan"><p class="arahan">${soalan}</p>${contoh?`<p class="contoh">Contoh: “${contoh}”</p>`:""}<div class="baris-dengar"></div><div class="rakam"></div><div class="maklum"></div></div>`;
       isi.querySelector(".baris-dengar").append(A.btnDengar(()=>dengar||contoh||soalan,"🔊 Dengar contoh","khas"));
       const r=isi.querySelector(".rakam"),mk=isi.querySelector(".maklum");
-      const tanpa=t=>{r.innerHTML=`<p>${t}</p>`;r.append(A.butang("✅ Saya sudah menyebutnya",label?"emas":"",siap))};
+      const tanpa=t=>{r.innerHTML=`<p>${t}</p>`;r.append(A.butang("✅ Saya sudah menyebutnya",label?"emas":"",()=>siap("tanpa rakaman")))};
       if(!boleh){tanpa("Sebut dengan kuat kepada guru atau rakan.");return}
-      let rk=null;const b=A.butang("🎙️ Rakam suara saya","emas",async()=>{
-        if(rk){const blob=await rk.henti();rk=null;dirakam=true;if(this.profil.simpanSuara)PKN.Rekod.simpanSuara(blob,{nama:this.profil.nama,kelas:this.profil.kelas,lokasi:PKN.KANDUNGAN.lokasi[k],soalan});
+      let rk=null,mulaMs=0;const b=A.butang("🎙️ Rakam suara saya","emas",async()=>{
+        if(rk){const blob=await rk.henti();rk=null;terakhir={blob,tempohMs:Math.max(0,Date.now()-mulaMs)};
           r.innerHTML="";const au=document.createElement("audio");au.controls=true;au.src=URL.createObjectURL(blob);r.append(au);
-          const br=document.createElement("div");br.className="baris-butang";br.append(A.butang("🔁 Rakam semula","kayu kecil",lukis),A.butang(label||"Teruskan ▶","emas",siap));r.append(br);
+          const br=document.createElement("div");br.className="baris-butang";br.append(A.butang("🔁 Rakam semula","kayu kecil",lukis),A.butang(label||"Teruskan ▶","emas",()=>siap("dirakam")));r.append(br);
           mk.className="maklum betul";mk.textContent="👂 Dengar rakaman kamu. Adakah sebutan kamu jelas?";return}
-        try{A.henti();rk=await this.mulaRakam();b.innerHTML="⏹ Berhenti merakam";mk.className="maklum";mk.textContent="🔴 Sedang merakam… Sebut sekarang."}
+        try{A.henti();rk=await this.mulaRakam();mulaMs=Date.now();b.innerHTML="⏹ Berhenti merakam";mk.className="maklum";mk.textContent="🔴 Sedang merakam… Sebut sekarang."}
         catch(e){tanpa("Mikrofon tidak dapat digunakan di sini. Sebut dengan kuat kepada guru atau rakan.")}});
-      r.append(b);const l=A.butang("Langkau rakaman","kayu kecil",siap);l.style.marginLeft="8px";r.append(l)};
+      r.append(b);const l=A.butang("Langkau rakaman","kayu kecil",()=>siap("dilangkau"));l.style.marginLeft="8px";r.append(l)};
     lukis();
   },
   // ---------- Enjin soalan pilihan (dengar, pilih, maklum balas, cuba semula, direkod) ----------
@@ -3540,10 +3653,13 @@ PKN.Belajar={
       ${Object.values(ring).map(m=>`<tr><td>${E(m.nama)}</td><td>${E(m.kelas)}</td><td>${m.selesai.size}/6</td><td>${m.betul}/${m.jawapan}</td></tr>`).join("")||"<tr><td colspan=4>Tiada rekod lagi.</td></tr>"}</table></div>
       <p class="arahan">Rekod terkini (${R.length})</p><div class="jadual"><table><tr><th>Masa</th><th>Nama</th><th>Lokasi</th><th>Soalan</th><th>Jawapan</th><th>Betul</th></tr>
       ${R.slice(0,60).map(r=>`<tr><td>${new Date(r.masa).toLocaleString("ms-MY")}</td><td>${E(r.nama)}</td><td>${E(r.lokasi||"")}</td><td>${E(r.soalan||r.aktiviti||"")}</td><td>${E(r.jawapan||"")}</td><td>${E(r.betul||"")}</td></tr>`).join("")}</table></div>
-      <label class="tanda"><input type="checkbox" id="cSuara" ${this.profil&&this.profil.simpanSuara?"checked":""}> Simpan rakaman suara murid dalam peranti ini (dengan kebenaran)</label><textarea id="tCsv" hidden readonly></textarea>`;
-    isi.querySelector("#cSuara").onchange=e=>{if(this.profil){this.profil.simpanSuara=e.target.checked;this.simpan()}};
-    const csv=()=>{const kol=["masa","nama","kelas","percubaan","jenis","lokasi","aktiviti","soalan","jawapan","betul","cubaan"],q=v=>`"${String(v===undefined?"":v).replace(/"/g,'""')}"`;
-      return "\ufeff"+kol.join(",")+"\n"+R.slice().reverse().map(r=>kol.map(c=>q(c==="masa"?new Date(r.masa).toLocaleString("ms-MY"):r[c])).join(",")).join("\n")};
+      <label class="tanda"><input type="checkbox" id="cSuara" ${await PKN.Rekod.bolehSimpanSuara()?"checked":""}> Simpan rakaman suara murid dalam peranti ini (dengan kebenaran)</label><textarea id="tCsv" hidden readonly></textarea>`;
+    // v5.2 Fasa 2: tetapan peringkat peranti (bukan lagi dalam profil murid)
+    isi.querySelector("#cSuara").onchange=e=>PKN.Rekod.setSimpanSuara(e.target.checked);
+    // v5.2 Fasa 2: lajur baharu di hujung (lajur sedia ada tidak berubah)
+    const nilai={};(await PKN.Rekod.senaraiRakaman()).forEach(x=>{nilai[x.idRakaman]=x.penilaian||""});
+    const csv=()=>{const kol=["masa","nama","kelas","percubaan","jenis","lokasi","aktiviti","soalan","jawapan","betul","cubaan","idMurid","statusLisan","idRakaman","penilaianSuara"],q=v=>`"${String(v===undefined||v===null?"":v).replace(/"/g,'""')}"`;
+      return "\ufeff"+kol.join(",")+"\n"+R.slice().reverse().map(r=>kol.map(c=>q(c==="masa"?new Date(r.masa).toLocaleString("ms-MY"):c==="penilaianSuara"?(r.idRakaman?(nilai[r.idRakaman]===undefined?"rakaman dipadam":nilai[r.idRakaman]):""):r[c])).join(",")).join("\n")};
     A.bukaPapan({ikon:"📋",tajuk:"Rekod Murid",sub:"Untuk guru sahaja",isi,kaki:[
       A.butang("🗑️ Padam rekod","kayu kecil",async()=>{if(confirm("Padam semua rekod dalam peranti ini? Tindakan ini tidak boleh diundur.")){await PKN.Rekod.padamSemua();this.paparRekod()}}),
       A.butang("⬇️ Eksport CSV (Excel)","emas",()=>{const t=csv();try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv;charset=utf-8"}));a.download=`rekod-pengembaraan-kata-nama-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(a);a.click();a.remove()}catch(e){}
@@ -3591,7 +3707,7 @@ PKN.Antaramuka={
       {k:3,sub:"Asingkan kata nama am dan kata nama khas.",p:iso(7,5)},{k:4,sub:"Misi terakhir: cari tiga kunci!",p:iso(35,15)}];
     this.zonSemasa=null;
     // tetapan: susun semula panel ujian sebagai panel Tetapan
-    const pu=document.getElementById("panelUji");if(pu){pu.querySelector("h2").textContent="Tetapan";const sm=pu.querySelector("small");if(sm)sm.textContent="Pengembaraan Kata Nama · v5.1.2 (DALAM SEMAKAN)";
+    const pu=document.getElementById("panelUji");if(pu){pu.querySelector("h2").textContent="Tetapan";const sm=pu.querySelector("small");if(sm)sm.textContent="Pengembaraan Kata Nama · v5.2 (DALAM SEMAKAN)";
       const isi=pu.querySelector(".isi"),atas=document.createElement("div");
       atas.innerHTML=`<div class="baris"><b>Zum:</b><button class="pil" data-tz="-1">－ Keluar</button><button class="pil" data-tz="1">＋ Masuk</button><button class="pil" data-tz="0">⟳ Asal</button></div>
         <div class="baris"><b>Audio:</b><button class="pil" id="tAudio">🔊 Hidup</button></div>
@@ -3600,7 +3716,7 @@ PKN.Antaramuka={
       isi.prepend(atas);atas.querySelectorAll("[data-tz]").forEach(b=>b.onclick=()=>this.aturZum(+b.dataset.tz));
       atas.querySelector("#tAudio").onclick=()=>this.togolAudio();
       atas.querySelector("#tNotaB").onclick=()=>{pu.hidden=true;PKN.Belajar.nota()};
-      atas.querySelector("#tTukar").onclick=()=>{pu.hidden=true;PKN.Belajar.mulaAliran()};
+      atas.querySelector("#tTukar").onclick=()=>{pu.hidden=true;PKN.Belajar.tukarMurid()};
       atas.querySelector("#tGuru").onclick=()=>{pu.hidden=true;PKN.Belajar.guru()}}
   },
   tetapan(){const pu=document.getElementById("panelUji");if(!pu||PKN.UI.modal&&pu.hidden)return;pu.hidden=!pu.hidden},
@@ -3960,7 +4076,7 @@ PKN.Tetapan={
     const nilai=()=>z.querySelector(".nilai-zum").textContent=Math.round(U.zum*100)+"%";nilai();z.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{U.aturZum(+b.dataset.z);nilai()});b2.append(z);
     const b3=this.bahagian(isi,"👤 Murid");const P=B.profil;
     b3.insertAdjacentHTML("beforeend",`<p class="info-murid">${P?`<b>${A.esc(P.nama)}</b> · ${A.esc(P.kelas||"–")} · ${P.watak==="LP"?"Penjelajah Perempuan":"Penjelajah Lelaki"}`:"Belum mendaftar"}</p>`);
-    const br=document.createElement("div");br.className="baris-butang kiri";br.append(A.butang("📖 Nota","kayu kecil",()=>B.nota()),A.butang("❓ Panduan","kayu kecil",()=>PKN.Panduan.buka()),A.butang("👤 Tukar murid","kayu kecil",()=>{A.tutup();B.mulaAliran()}));b3.append(br);
+    const br=document.createElement("div");br.className="baris-butang kiri";br.append(A.butang("📖 Nota","kayu kecil",()=>B.nota()),A.butang("❓ Panduan","kayu kecil",()=>PKN.Panduan.buka()),A.butang("👤 Tukar murid","kayu kecil",()=>{A.tutup();B.tukarMurid()}));b3.append(br);
     const b4=this.bahagian(isi,"🔐 Guru");b4.insertAdjacentHTML("beforeend",`<p class="nota-kecil">Rekod murid, eksport CSV dan menu ujian. Memerlukan PIN guru.</p>`);b4.append(A.butang("🔐 Buka menu guru","emas kecil",()=>PKN.MenuGuru.pin()));
     A.bukaPapan({ikon:"⚙️",tajuk:"Tetapan",sub:"Bunyi, paparan, murid dan guru",isi,kaki:[A.butang("✔ Tutup","emas",()=>A.tutup())]});document.getElementById("modalPapan").classList.add("lebar");
   }
@@ -4412,7 +4528,7 @@ PKN.UI={
 document.getElementById("aksi").onclick=()=>PKN.UI.tekan();
 const sentuh=matchMedia("(pointer:coarse)").matches;
 // Susun atur telefon dibezakan daripada komputer
-// v5.1.2: tablet (skrin sentuh lebar ≥ 1000 px, atau sisi terpendek ≥ 600 px) menggunakan susun atur komputer.
+// v5.2: tablet (skrin sentuh lebar ≥ 1000 px, atau sisi terpendek ≥ 600 px) menggunakan susun atur komputer.
 // Sebelum ini tablet dikesan sebagai telefon: butang dikecilkan ke saiz telefon tetapi label komputer masih dipaparkan
 // dan melimpah. Kawalan sentuh (joystick, cubit) tidak bergantung pada kelas ini.
 PKN.UI.modTelefon=()=>{const W=window.innerWidth,H=window.innerHeight,t=W<700||(sentuh&&W<1000&&Math.min(W,H)<600);document.body.classList.toggle("telefon",t);return t};
@@ -4746,7 +4862,7 @@ PKN.BabakPenutup={
    v5.1.1: pada komputer dengan tinggi skrin pendek (contoh: Chrome dengan bar penanda buku dan skala paparan Windows 125%),
    lajur butang Sebut/Beg Kata/Misi bertindih dengan butang zum di bawah peta mini. Jika ruang tidak cukup, butang disusun
    mendatar (sebaris) di kanan bawah. Telefon tidak terjejas. */
-/* v5.1.2: semakan untuk SEMUA peranti (termasuk telefon melintang) dan dijalankan semula apabila paparan berubah.
+/* v5.2: semakan untuk SEMUA peranti (termasuk telefon melintang) dan dijalankan semula apabila paparan berubah.
    Punca masalah v5.1.1: semakan hanya pada 0.6–6 s selepas halaman dimuat; dengan Phaser sebenar pulau belum dipaparkan
    pada masa itu, jadi pertindihan tidak dikesan. Kini dipantau setiap 1 s (hanya dikira semula jika saiz skrin, mod
    telefon atau kedudukan butang zum berubah).
@@ -4813,6 +4929,195 @@ PKN.IkonSVG={
   }
 };
 if(document.body)PKN.IkonSVG.sedia();else document.addEventListener("DOMContentLoaded",()=>PKN.IkonSVG.sedia());
+</script>
+<style>
+/* v5.2 Fasa 1: senarai murid, "Adakah ini kamu?" dan amaran storan (papan putih, tulisan hitam) */
+.senarai-murid{display:flex;flex-direction:column;gap:8px;margin:8px 0 4px}
+.baris-murid{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;width:100%;min-height:52px;margin:0;padding:8px 14px;background:#FFFFFF!important;color:#111!important;border:3px solid #8B5A2B;border-radius:14px;text-align:left;font:inherit;cursor:pointer;box-shadow:0 3px 0 #C9A27A}
+.baris-murid:hover,.baris-murid:focus-visible{border-color:#E0A200;background:#FFF8E1!important;outline:none}
+.baris-murid.aktif{border-color:#2E7D32}
+.baris-murid b{grid-column:1;font-size:1.05rem;color:#111!important;overflow-wrap:anywhere}
+.baris-murid small{grid-column:1;font-size:.875rem;color:#333!important}
+.baris-murid .kemajuan-baris{grid-column:2;grid-row:1/span 2;font-weight:800;font-size:1rem;color:#111!important;white-space:nowrap}
+.amaran-storan{grid-column:1/-1;margin:8px 0 0;padding:6px 10px;background:#FFFFFF!important;color:#8A1C1C!important;border:2px solid #C62828;border-radius:10px;font-size:.875rem;font-weight:700;text-align:center}
+</style>
+<script>
+/* FAIL MASA DEPAN: js/ui/SenaraiMurid.js
+   v5.2 Fasa 1: berbilang murid dalam satu peranti. Muka depan: "Pilih nama saya" (senarai murid), "Murid baharu" sentiasa
+   mencipta rekod baharu (tiada profil ditindih), semakan "Adakah ini kamu?" bagi nama dan kelas yang sama.
+   "Tukar murid" memuat semula halaman supaya keadaan dunia (papan Gua, rumah api, peti) mengikut murid yang dipilih.
+   Menu Guru: import semula rekod v5.1.1. */
+(function(){
+  const B=PKN.Belajar,R=PKN.Rekod,A=PKN.Aktiviti,U=PKN.Antaramuka,TERUS="pkn-terus-masuk";
+  const kemajuan=m=>(m.selesai||[]).filter(Boolean).length;
+  B._senarai=[];
+  B.tukarMurid=function(){try{A.tutup()}catch(e){}location.reload()};
+  B.masukSebagai=async function(id){if(this._sibukMasuk)return;this._sibukMasuk=true;await R.pilihMurid(id);
+    try{sessionStorage.setItem(TERUS,id)}catch(e){}location.reload()};
+  // Muka depan: senarai murid dimuat dahulu; selepas memilih nama, halaman dimuat semula dan murid terus masuk ke pulau
+  const MA=B.mulaAliran.bind(B);
+  B.mulaAliran=async function(){
+    let terus=null;try{terus=sessionStorage.getItem(TERUS);sessionStorage.removeItem(TERUS)}catch(e){}
+    this._senarai=await R.senaraiMurid();
+    if(terus&&this.profil&&this.profil.idMurid===terus){this.pulih();this.masukPulau(false);return}
+    MA()};
+  const MD=U.mukaDepan.bind(U);
+  U.mukaDepan=function(profil,baru,teruskan){MD(profil,baru,teruskan);const el=document.getElementById("mukaDepan");if(!el)return;
+    const L=B._senarai||[],cta=el.querySelector(".cta-depan");
+    if(cta&&!cta.querySelector("#dPilih")&&L.length&&(L.length>1||!profil)){
+      const b=document.createElement("button");b.className="btn kayu";b.id="dPilih";b.textContent="👥 Pilih nama saya";
+      b.onclick=()=>{el.hidden=true;PKN.UI.modal=false;B.pilihNama()};
+      const dBaru=cta.querySelector("#dBaru");cta.insertBefore(b,dBaru||null)}
+    if(R.storanGagal&&!el.querySelector(".amaran-storan")){const kad=el.querySelector(".kad-depan");
+      if(kad)kad.insertAdjacentHTML("beforeend",`<p class="amaran-storan" role="alert">⚠️ Rekod tidak dapat disimpan dalam peranti ini. Kemajuan akan hilang jika halaman dimuat semula.</p>`)}};
+  B._banding=(a,b)=>String(a.kelas||"").localeCompare(String(b.kelas||""),"ms",{numeric:true,sensitivity:"base"})||String(a.nama||"").localeCompare(String(b.nama||""),"ms",{sensitivity:"base"});
+  B.barisMurid=function(m,aktif){const E=A.esc;
+    return`<button type="button" class="baris-murid${aktif?" aktif":""}" data-id="${E(m.idMurid)}"><b>${E(m.nama||"Penjelajah")}</b><small>${E(m.kelas||"Tiada kelas")} · Kod ${E(m.kodPaparan||"–")}</small><span class="kemajuan-baris">${kemajuan(m)}/6</span></button>`};
+  B.pilihNama=function(){
+    const L=[...(this._senarai||[])].sort(this._banding),aktif=this.profil&&this.profil.idMurid,isi=document.createElement("div");
+    isi.innerHTML=`<p class="arahan">Ketik nama kamu.</p><div class="senarai-murid">${L.map(m=>this.barisMurid(m,m.idMurid===aktif)).join("")}</div>`;
+    isi.querySelectorAll(".baris-murid").forEach(b=>b.onclick=()=>this.masukSebagai(b.dataset.id));
+    A.bukaPapan({ikon:"👥",tajuk:"Pilih Nama",sub:`${L.length} murid dalam peranti ini`,isi,kaki:[
+      A.butang("◀ Kembali","kayu",()=>{A.tutup();this.mulaAliran()}),A.butang("Murid baharu","emas",()=>this.daftar())]})};
+  // Daftar: sama seperti v5.1.1, tetapi murid baharu disimpan sebagai rekod sendiri
+  B.daftar=function(){
+    const isi=document.createElement("div");
+    isi.innerHTML=`<p class="arahan">Siapakah nama kamu?</p>
+      <label class="medan">Nama atau kod murid<input id="iNama" maxlength="24" autocomplete="off" placeholder="Contoh: Aisyah"></label>
+      <label class="medan">Kelas<input id="iKelas" maxlength="20" autocomplete="off" placeholder="Contoh: 1 Bestari"></label>
+      <p class="nota-kecil">Tulis nama panggilan sahaja. Rekod disimpan dalam peranti ini.</p><div class="maklum"></div>`;
+    const mk=isi.querySelector(".maklum");
+    const b=A.butang("Seterusnya ▶","emas",async()=>{const n=isi.querySelector("#iNama").value.trim(),k=isi.querySelector("#iKelas").value.trim();
+      if(!n){mk.className="maklum salah";mk.textContent="Tulis nama kamu dahulu.";isi.querySelector("#iNama").focus();return}
+      const sama=(await R.senaraiMurid()).filter(m=>R.samaNama(m,{nama:n,kelas:k}));
+      if(sama.length)this.namaSama(sama.sort(this._banding),n,k);else this.daftarBaharu(n,k)});
+    A.bukaPapan({ikon:"🧭",tajuk:"Daftar Masuk",sub:"Langkah 1 daripada 3",isi,kaki:[A.butang("◀ Kembali","kayu",()=>{A.tutup();this.mulaAliran()}),b]});
+    setTimeout(()=>{const i=isi.querySelector("#iNama");if(i)i.focus()},200)};
+  B.daftarBaharu=function(n,k){const lama=this.profil;let sibuk=false;
+    this.pilihWatak(async w=>{if(sibuk)return;sibuk=true;
+      this.profil=await R.muridBaharu({nama:n,kelas:k,watak:w,simpanSuara:!!(lama&&lama.simpanSuara)});this._senarai=await R.senaraiMurid();
+      this.simpan();R.log({jenis:"daftar",lokasi:"-",aktiviti:"Daftar masuk",jawapan:w==="LP"?"Penjelajah perempuan":"Penjelajah lelaki"});this.pulih();this.pengenalan()})};
+  B.namaSama=function(L,n,k){const E=A.esc,isi=document.createElement("div"),satu=L.length===1;
+    isi.innerHTML=`<p class="arahan">Nama ini sudah ada dalam peranti ini.</p><p class="nota-kecil">${satu?"Adakah ini kamu? Ketik nama kamu untuk meneruskan pengembaraan.":"Ketik nama kamu untuk meneruskan pengembaraan."}</p>
+      <div class="senarai-murid">${L.map(m=>this.barisMurid(m,false)).join("")}</div>`;
+    isi.querySelectorAll(".baris-murid").forEach(b=>b.onclick=()=>this.masukSebagai(b.dataset.id));
+    const baharu=A.butang("Bukan, daftar baharu",satu?"kayu":"emas",()=>this.daftarBaharu(n,k));
+    A.bukaPapan({ikon:"👥",tajuk:"Adakah Ini Kamu?",sub:E(n)+(k?" · "+E(k):""),isi,kaki:satu?[baharu,A.butang("Ya, ini saya ▶","emas",()=>this.masukSebagai(L[0].idMurid))]:[A.butang("◀ Kembali","kayu",()=>this.daftar()),baharu]})};
+  // Sesi pembelajaran bermula apabila murid masuk ke pulau
+  const MP=B.masukPulau.bind(B);B.masukPulau=function(baru){MP(baru);try{R.sesiId()}catch(e){}};
+  // Menu Guru: import semula rekod v5.1.1 (baca sahaja; rekod yang sudah disalin dilangkau)
+  const MGB=PKN.MenuGuru.buka.bind(PKN.MenuGuru);
+  PKN.MenuGuru.buka=function(){MGB();const isi=document.querySelector("#modalPapan .tetapan");if(!isi)return;
+    const r=PKN.Tetapan.bahagian(isi,"🗂️ Rekod versi 5.1.1");
+    r.insertAdjacentHTML("beforeend",`<p class="nota-kecil">Salin profil dan rekod jawapan versi 5.1.1 dalam peranti ini ke sistem rekod baharu. Rekod yang sudah disalin tidak disalin semula. Data versi 5.1.1 tidak diubah.</p><div class="maklum"></div>`);
+    const mk=r.querySelector(".maklum");
+    r.append(A.butang("🗂️ Import semula rekod v5.1.1","kayu kecil",async()=>{
+      if(R.storanGagal){mk.className="maklum salah";mk.textContent="Storan peranti tidak tersedia.";return}
+      mk.className="maklum";mk.textContent="Sedang menyemak…";const h=await R.importV1();B._senarai=await R.senaraiMurid();
+      mk.className="maklum betul";mk.textContent=!h.ada?"Tiada data versi 5.1.1 dalam peranti ini.":`Selesai: ${h.murid} profil murid dan ${h.rekod} rekod jawapan disalin. ${h.langkau} rekod sudah ada dan dilangkau.`}))};
+})();
+</script>
+<style>
+/* v5.2 Fasa 2: Rekod Suara Murid (papan putih, tulisan hitam) */
+.btn.bahaya{background:#B3261E!important;color:#FFFFFF!important;box-shadow:0 5px 0 #7A1A14}
+.suara-guru .nota-privasi{background:#FFFFFF!important;color:#111!important;border:2px solid #2F80C9;border-radius:12px;padding:8px 12px;font-size:.9rem;margin:0 0 8px}
+.suara-guru .info-storan{font-size:.875rem;color:#333!important;margin:4px 0 8px}
+.suara-guru .penapis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+.suara-guru .penapis label{display:flex;flex-direction:column;font-weight:800;font-size:.875rem;color:#111!important}
+.suara-guru select{font:inherit;font-size:1rem;min-height:40px;padding:4px 8px;margin-top:2px;border:2px solid #8B5A2B;border-radius:10px;background:#FFFFFF!important;color:#111!important}
+.suara-guru h3.kumpulan{margin:14px 0 6px;font-size:1.05rem;color:#111!important;border-bottom:2px solid #E8D6B5;padding-bottom:2px}
+.kad-rakaman{background:#FFFFFF!important;color:#111!important;border:2px solid #C9A27A;border-radius:12px;padding:8px 10px;margin:0 0 8px}
+.kad-rakaman.lama{border-style:dashed}
+.kad-rakaman .baris1{font-weight:800}.kad-rakaman .baris2,.kad-rakaman .baris3{font-size:.875rem;color:#333!important;overflow-wrap:anywhere}
+.kad-rakaman .lencana-lama{display:inline-block;background:#EFEFEF;color:#111;border-radius:8px;padding:0 6px;font-size:.8125rem;margin-left:6px;font-weight:700}
+.kad-rakaman .tindakan{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.kad-rakaman .tindakan .btn{min-height:40px}
+.kad-rakaman .btn.nilai{background:#FFFFFF!important;color:#111!important;border:2px solid #8B5A2B;box-shadow:none}
+.kad-rakaman .btn.nilai.on.jelas{background:#2E7D32!important;color:#FFFFFF!important;border-color:#2E7D32}
+.kad-rakaman .btn.nilai.on.bimbing{background:#B26A00!important;color:#FFFFFF!important;border-color:#B26A00}
+.kad-rakaman audio{width:100%;margin-top:6px}
+</style>
+<script>
+/* FAIL MASA DEPAN: js/ui/RekodSuaraMurid.js
+   v5.2 Fasa 2: skrin guru "Rekod Suara Murid" (Menu Guru) dan panel pengesahan sendiri (tidak bergantung pada confirm()).
+   Rakaman kekal dalam peranti; rakaman lama v5.1.1 dibaca sahaja (dengar dan muat turun). */
+PKN.Sahkan=function({ikon="⚠️",tajuk,mesej,ya="Ya, padam",taip,kembali,teruskan}){
+  const A=PKN.Aktiviti,isi=document.createElement("div");
+  isi.innerHTML=`<p class="arahan">${mesej}</p>${taip?`<label class="medan">Taip <b>${taip}</b> untuk mengesahkan<input id="iSahkan" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>`:""}<div class="maklum"></div>`;
+  const mk=isi.querySelector(".maklum");let sibuk=false;
+  const bYa=A.butang(ya,"bahaya",async()=>{if(sibuk)return;
+    if(taip&&isi.querySelector("#iSahkan").value.trim().toUpperCase()!==taip){mk.className="maklum salah";mk.textContent=`Taip ${taip} untuk mengesahkan.`;return}
+    sibuk=true;await teruskan()});
+  A.bukaPapan({ikon,tajuk,sub:"Pengesahan",isi,kaki:[A.butang("Batal","kayu",kembali),bYa]});
+  if(taip)setTimeout(()=>{const i=isi.querySelector("#iSahkan");if(i)i.focus()},150)};
+PKN.SuaraGuru={
+  penapis:{murid:"",kelas:"",lokasi:"",nilai:""},
+  _url:[],
+  _bebas(){this._url.forEach(u=>{try{URL.revokeObjectURL(u)}catch(e){}});this._url=[]},
+  _ext(m){m=String(m||"");return/mp4|aac|m4a/.test(m)?"m4a":/ogg/.test(m)?"ogg":/mpeg|mp3/.test(m)?"mp3":/wav/.test(m)?"wav":"webm"},
+  _nama(t){return String(t||"").normalize("NFKD").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"-").slice(0,30)||"murid"},
+  _tempoh(ms){if(!ms)return"–";const s=Math.round(ms/1000);return s<60?`${s} saat`:`${Math.floor(s/60)} min ${s%60} saat`},
+  async buka(){
+    const A=PKN.Aktiviti,R=PKN.Rekod,E=A.esc,P=this.penapis;this._bebas();
+    const [baru,lama,murid]=await Promise.all([R.senaraiRakaman(),R.rakamanLama(),R.senaraiMurid()]);
+    const kod={};murid.forEach(m=>kod[m.idMurid]=m.kodPaparan||"");
+    const semua=[...baru,...lama],kunci=r=>r.idMurid?r.idMurid:"lama:"+r.nama+"|"+r.kelas,label=r=>`${r.nama||"Tanpa nama"} · ${r.kelas||"Tiada kelas"}${r.idMurid&&kod[r.idMurid]?" · Kod "+kod[r.idMurid]:""}`;
+    const pilMurid={};semua.forEach(r=>{pilMurid[kunci(r)]=label(r)});
+    const kelas=[...new Set(semua.map(r=>r.kelas||""))].sort(),lokasi=[...new Set(semua.map(r=>r.lokasi||""))].sort();
+    const papar=semua.filter(r=>(!P.murid||kunci(r)===P.murid)&&(!P.kelas||(r.kelas||"")===P.kelas)&&(!P.lokasi||(r.lokasi||"")===P.lokasi)&&
+      (!P.nilai||(P.nilai==="belum"?!r.lama&&!r.penilaian:r.penilaian===P.nilai)));
+    const kump=new Map();papar.forEach(r=>{const k=kunci(r);if(!kump.has(k))kump.set(k,[]);kump.get(k).push(r)});
+    let storan="";try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();storan=`Ruang storan digunakan: ${(e.usage/1048576).toFixed(1)} MB daripada ${(e.quota/1048576).toFixed(0)} MB.`}}catch(e){}
+    const simpan=await R.bolehSimpanSuara(),pilih=(id,teks,nilai,opsyen)=>`<label>${teks}<select id="${id}"><option value="">Semua</option>${opsyen.map(([v,t])=>`<option value="${E(v)}"${v===nilai?" selected":""}>${E(t)}</option>`).join("")}</select></label>`;
+    const isi=document.createElement("div");isi.className="suara-guru";
+    isi.innerHTML=`<p class="nota-privasi">🔒 Rakaman disimpan dalam peranti ini sahaja dan tidak dimuat naik ke Internet. Rakaman hanya disimpan jika pilihan di bawah dihidupkan dengan kebenaran.</p>
+      <label class="tanda"><input type="checkbox" id="cSuaraG" ${simpan?"checked":""}> Simpan rakaman suara murid dalam peranti ini (dengan kebenaran)</label>
+      <p class="info-storan">${baru.length} rakaman${lama.length?` · ${lama.length} rakaman lama (v5.1.1)`:""}${storan?" · "+storan:""}</p>
+      <div class="penapis">${pilih("pMurid","Murid",P.murid,Object.entries(pilMurid).sort((a,b)=>a[1].localeCompare(b[1],"ms")))}${pilih("pKelas","Kelas",P.kelas,kelas.map(k=>[k,k||"Tiada kelas"]))}
+        ${pilih("pLokasi","Lokasi",P.lokasi,lokasi.map(k=>[k,k||"–"]))}${pilih("pNilai","Penilaian",P.nilai,[["belum","Belum dinilai"],["Jelas","Jelas"],["Perlu bimbingan","Perlu bimbingan"]])}</div>
+      <div class="senarai-rakaman">${papar.length?"":`<p class="arahan">${semua.length?"Tiada rakaman yang sepadan dengan penapis.":"Tiada rakaman lagi."}</p>`}</div>`;
+    isi.querySelector("#cSuaraG").onchange=e=>{R.setSimpanSuara(e.target.checked);PKN.UI.toast(e.target.checked?"🎙️ Rakaman suara murid akan disimpan.":"Rakaman suara murid tidak akan disimpan.",2500)};
+    [["pMurid","murid"],["pKelas","kelas"],["pLokasi","lokasi"],["pNilai","nilai"]].forEach(([id,k])=>isi.querySelector("#"+id).onchange=e=>{P[k]=e.target.value;this.buka()});
+    const sen=isi.querySelector(".senarai-rakaman");
+    for(const [k,senarai] of kump){
+      const h=document.createElement("h3");h.className="kumpulan";h.textContent=`${pilMurid[k]} (${senarai.length})`;sen.append(h);
+      for(const r of senarai){
+        const kad=document.createElement("div");kad.className="kad-rakaman"+(r.lama?" lama":"");
+        const t=r.masa?new Date(r.masa).toLocaleString("ms-MY"):"–";
+        kad.innerHTML=`<div class="baris1">${E(r.lokasi||"–")}${r.lama?'<span class="lencana-lama">Rakaman lama</span>':""}</div>
+          <div class="baris2">${E(r.soalan||"")}</div><div class="baris3">${E(t)}${r.percubaan?` · Percubaan ${r.percubaan}`:""} · ${this._tempoh(r.tempohMs)} · ${Math.max(1,Math.round((r.saizBait||0)/1024))} KB</div>
+          <div class="tindakan"></div><div class="slot-audio"></div>`;
+        const tk=kad.querySelector(".tindakan"),slot=kad.querySelector(".slot-audio");
+        tk.append(A.butang("▶ Dengar","emas kecil",()=>{
+          document.querySelectorAll(".suara-guru .slot-audio audio").forEach(a=>{a.pause();a.remove()});
+          const b=R.audioBlob(r);if(!b){PKN.UI.toast("Audio tidak dapat dibuka.",2500);return}
+          const u=URL.createObjectURL(b);this._url.push(u);const au=document.createElement("audio");au.controls=true;au.src=u;slot.append(au);au.play().catch(()=>{})}));
+        if(!r.lama){
+          const nb=(teks,nilai,kls)=>{const b=A.butang(teks,"nilai kecil "+kls+(r.penilaian===nilai?" on":""),async()=>{
+              const baruN=r.penilaian===nilai?null:nilai;const x=await R.nilaiRakaman(r.idRakaman,baruN);if(!x)return;r.penilaian=x.penilaian;
+              tk.querySelectorAll(".nilai").forEach(n=>n.classList.toggle("on",n.dataset.n===r.penilaian));
+              tk.querySelectorAll(".nilai").forEach(n=>n.setAttribute("aria-pressed",n.dataset.n===r.penilaian))});
+            b.dataset.n=nilai;b.setAttribute("aria-pressed",r.penilaian===nilai);return b};
+          tk.append(nb("✔ Jelas","Jelas","jelas"),nb("Perlu bimbingan","Perlu bimbingan","bimbing"))}
+        tk.append(A.butang("⬇ Muat turun","kayu kecil",()=>{const b=R.audioBlob(r);if(!b)return;
+          const d=r.masa?new Date(r.masa):new Date(),tm=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
+          const a=document.createElement("a"),u=URL.createObjectURL(b);a.href=u;a.download=`${this._nama(r.nama)}_${this._nama(r.kelas)}_${this._nama(r.lokasi)}_${tm}.${this._ext(r.mimeType||b.type)}`;
+          document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}));
+        if(!r.lama)tk.append(A.butang("🗑 Padam","kayu kecil",()=>PKN.Sahkan({tajuk:"Padam Rakaman",
+          mesej:`Padam rakaman <b>${E(r.nama)}</b> (${E(r.lokasi||"")}, ${E(t)})? Tindakan ini tidak boleh diundur.`,kembali:()=>this.buka(),
+          teruskan:async()=>{await R.padamRakaman(r.idRakaman);PKN.UI.toast("Rakaman dipadam.",2000);this.buka()}})));
+        sen.append(kad)}}
+    const kaki=[A.butang("◀ Menu Guru","kayu",()=>{this._bebas();PKN.MenuGuru.buka()})];
+    if(baru.length)kaki.push(A.butang("🗑 Padam semua","kayu kecil",()=>PKN.Sahkan({tajuk:"Padam Semua Rakaman",
+      mesej:`Padam semua <b>${baru.length}</b> rakaman suara murid dalam peranti ini? Rakaman lama versi 5.1.1 tidak dipadam. Tindakan ini tidak boleh diundur.`,taip:"PADAM",ya:"Padam semua",
+      kembali:()=>this.buka(),teruskan:async()=>{await R.padamSemuaRakaman();PKN.UI.toast("Semua rakaman dipadam.",2000);this.buka()}})));
+    A.bukaPapan({ikon:"🎙️",tajuk:"Rekod Suara Murid",sub:"Untuk guru sahaja",isi,kaki});document.getElementById("modalPapan").classList.add("lebar")}
+};
+(function(){
+  const MGB=PKN.MenuGuru.buka.bind(PKN.MenuGuru);
+  PKN.MenuGuru.buka=function(){MGB();const r1=document.querySelector("#modalPapan .tetapan .bahagian-tetapan");if(!r1)return;
+    r1.append(PKN.Aktiviti.butang("🎙️ Rekod Suara Murid","emas kecil",()=>PKN.SuaraGuru.buka()))};
+})();
 </script>
 </body>
 </html>
