@@ -1,0 +1,21 @@
+{
+  "id": "pengembaraan-kata-nama",
+  "name": "Pengembaraan Kata Nama",
+  "short_name": "Kata Nama",
+  "description": "Permainan Bahasa Melayu Tahun 1: Kata Nama Am dan Kata Nama Khas.",
+  "lang": "ms",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#2A6B27",
+  "background_color": "#2F98D3",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    { "src": "ikon/ikon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "ikon/ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "ikon/ikon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "ikon/ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
